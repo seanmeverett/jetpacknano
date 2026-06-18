@@ -1,14 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { TOPICS } from '../seed';
 import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline } from '../icons';
 
 export function Onboarding() {
-  const { finishOnboarding } = useApp();
+  const { finishOnboarding, prefetchFeed } = useApp();
   const [picked, setPicked] = useState<string[]>([]);
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const ready = picked.length >= 3;
+
+  // Preload live content as soon as the user has picked enough topics
+  useEffect(() => {
+    if (picked.length >= 3) prefetchFeed(picked);
+  }, [picked.length, prefetchFeed]);
 
   return (
     <div className="onboard" style={{ background: 'radial-gradient(120% 80% at 50% 0%, #590000 0%, #000000 70%)' }}>
