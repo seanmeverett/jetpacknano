@@ -10,6 +10,7 @@ import { CommentSheet } from './CommentSheet';
 import { ShareSheet } from './ShareSheet';
 import { TikTokEmbed } from './TikTokEmbed';
 import { StoryView } from './StoryView';
+import { LinkText } from './LinkText';
 import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
@@ -129,7 +130,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         ? <StoryView images={post.media} alt={post.caption} />
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
         ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted={cardMuted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
-        : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : <div className="text-center"><p className="text-body">{post.caption}</p></div>}
+        : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : <div className="text-center"><p className="text-body"><LinkText text={post.caption} /></p></div>}
       <div className="tap-layer" onClick={tapBg} />
       <div className="grad-top" />
       <div className="media-badge">{(() => { const fi = formatInfo(post); return <><fi.Icon size={14} /> <span>{fi.fmt}</span></>; })()}</div>
@@ -167,7 +168,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
           <span className="tag" style={{ background: topic.color, color: '#FFFFFF' }}><TopicIcon size={12} /> {topic.label}</span>
           <span className="age">{ageText(post.ageHours)}</span>
         </div>
-        <p className="caption">{post.caption}</p>
+        <p className="caption"><LinkText text={post.caption} /></p>
         <button className="why-link" onClick={onWhy}><IoSparkles size={13} color="var(--accent)" /> Why am I seeing this?</button>
         {post.permalink
           ? <a className="photo-credit" href={post.permalink} target="_blank" rel="noreferrer">↗ {post.community || 'source'} &middot; open original</a>
