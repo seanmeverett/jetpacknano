@@ -1,21 +1,14 @@
 :root {
-  /* Jetpack Nano brand — near-black red-tinted bg, shades-of-red accents (no green/orange) */
-  --bg:#050000;
-  --bg-soft:#120006;
-  --panel:rgba(22,4,4,0.72);
-  --panel-solid:#0d0204;
-  --border:rgba(255,60,48,0.16);
-  --border-strong:rgba(255,60,48,0.34);
-  --text:#F5EDED;
-  --dim:#B89B9B;
-  --faint:#7A5C5C;
-  --brand:#ff2d20;       /* normal red */
-  --brand-strong:#ff0000; /* bright red */
-  --brand2:#ff5a5a;       /* muted-light red */
-  --accent:#ff5050;      /* bright red — reach / positive */
-  --good:#ff5050;
-  --bad:#ff2d20;
-  --warn:#ff5a5a;        /* muted red */
+  /* Jetpack Nano brand — only three reds: #FF0000 bright, #990000 muted, #590000 dark (+ black/white) */
+  --bg:#000000;
+  --bg-soft:#590000;
+  --panel:rgba(89,0,0,0.72);
+  --panel-solid:#590000;
+  --border:rgba(255,0,0,0.20);
+  --border-strong:#990000;
+  --text:#FFFFFF;
+  --dim:#B5B5B5;
+  --faint:#7A7A7A;
   font-synthesis: none; text-rendering: optimizeLegibility;
 }
 * { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent; }
@@ -26,6 +19,6 @@ body {
   overflow:hidden; letter-spacing:0.1px;
 }
 button { font-family: inherit; cursor: pointer; border:none; background:none; color:inherit; }
-.app { width:100%; height:100%; max-width:430px; margin:0 auto; position:relative; background:var(--bg); overflow:hidden; box-shadow:0 0 60px rgba(255,0,0,0.12); }
-@media (min-width:480px){ body{ background:#020001; } }
+.app { width:100%; height:100%; max-width:430px; margin:0 auto; position:relative; background:var(--bg); overflow:hidden; box-shadow:0 0 60px rgba(255,0,0,0.25); }
+@media (min-width:480px){ body{ background:#000000; } }
 ::-webkit-scrollbar { width:0; height:0; }

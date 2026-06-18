@@ -2,20 +2,20 @@ import type { Post, User } from './types';
 import { POST_IMAGE } from './postImages';
 
 export const TOPICS = [
-  { id: 'music', label: 'Music', icon: 'musical-notes', color: '#ff2d20' },
-  { id: 'comedy', label: 'Comedy', icon: 'happy', color: '#ff5050' },
-  { id: 'art', label: 'Art', icon: 'color-palette', color: '#ff5a5a' },
-  { id: 'cooking', label: 'Cooking', icon: 'restaurant', color: '#e8402a' },
-  { id: 'nature', label: 'Nature', icon: 'leaf', color: '#c8322a' },
-  { id: 'fitness', label: 'Fitness', icon: 'barbell', color: '#ff3d30' },
-  { id: 'tech', label: 'Tech', icon: 'hardware-chip', color: '#d93020' },
-  { id: 'travel', label: 'Travel', icon: 'airplane', color: '#ff6a5a' },
-  { id: 'gaming', label: 'Gaming', icon: 'game-controller', color: '#ff4040' },
-  { id: 'books', label: 'Books', icon: 'book', color: '#b03020' },
-  { id: 'fashion', label: 'Fashion', icon: 'shirt', color: '#ff6a6a' },
-  { id: 'science', label: 'Science', icon: 'flask', color: '#ff3030' },
-  { id: 'pets', label: 'Pets', icon: 'paw', color: '#ff807a' },
-  { id: 'diy', label: 'DIY', icon: 'construct', color: '#8a3030' },
+  { id: 'music', label: 'Music', icon: 'musical-notes', color: '#FF0000' },
+  { id: 'comedy', label: 'Comedy', icon: 'happy', color: '#990000' },
+  { id: 'art', label: 'Art', icon: 'color-palette', color: '#FF0000' },
+  { id: 'cooking', label: 'Cooking', icon: 'restaurant', color: '#990000' },
+  { id: 'nature', label: 'Nature', icon: 'leaf', color: '#FF0000' },
+  { id: 'fitness', label: 'Fitness', icon: 'barbell', color: '#990000' },
+  { id: 'tech', label: 'Tech', icon: 'hardware-chip', color: '#FF0000' },
+  { id: 'travel', label: 'Travel', icon: 'airplane', color: '#990000' },
+  { id: 'gaming', label: 'Gaming', icon: 'game-controller', color: '#FF0000' },
+  { id: 'books', label: 'Books', icon: 'book', color: '#990000' },
+  { id: 'fashion', label: 'Fashion', icon: 'shirt', color: '#FF0000' },
+  { id: 'science', label: 'Science', icon: 'flask', color: '#990000' },
+  { id: 'pets', label: 'Pets', icon: 'paw', color: '#FF0000' },
+  { id: 'diy', label: 'DIY', icon: 'construct', color: '#990000' },
 ] as const;
 
 export const USERS: User[] = [
@@ -101,20 +101,20 @@ const ROWS: SeedRow[] = [
 ];
 
 const BG: Record<string, [string, string]> = {
-  music: ['#ff2d20', '#3a0000'],
-  comedy: ['#ff5050', '#3a0006'],
-  art: ['#ff5a5a', '#3a0006'],
-  cooking: ['#e8402a', '#2a0000'],
-  nature: ['#c8322a', '#1a0000'],
-  fitness: ['#ff3d30', '#2a0000'],
-  tech: ['#d93020', '#1a0000'],
-  travel: ['#ff6a5a', '#2a0000'],
-  gaming: ['#ff4040', '#2a0000'],
-  books: ['#b03020', '#1a0000'],
-  fashion: ['#ff6a6a', '#2a0000'],
-  science: ['#ff3030', '#2a0000'],
-  pets: ['#ff807a', '#2a0000'],
-  diy: ['#8a3030', '#0f0000'],
+  music: ['#FF0000', '#590000'],
+  comedy: ['#990000', '#590000'],
+  art: ['#FF0000', '#590000'],
+  cooking: ['#990000', '#590000'],
+  nature: ['#FF0000', '#590000'],
+  fitness: ['#990000', '#590000'],
+  tech: ['#FF0000', '#590000'],
+  travel: ['#990000', '#590000'],
+  gaming: ['#FF0000', '#590000'],
+  books: ['#990000', '#590000'],
+  fashion: ['#FF0000', '#590000'],
+  science: ['#990000', '#590000'],
+  pets: ['#FF0000', '#590000'],
+  diy: ['#990000', '#590000'],
 };
 
 export const POSTS: Post[] = ROWS.map((r, i) => {

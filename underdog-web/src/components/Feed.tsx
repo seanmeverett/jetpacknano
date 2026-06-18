@@ -105,7 +105,7 @@ function PostCard({ rp, liked, followed, onLike, onFollow, onWhy }: { rp: Ranked
           <button className={`follow-btn ${followed ? "following" : ""}`} onClick={onFollow}>{followed ? "Following" : "Follow"}</button>
         </div>
         <div className="tag-row">
-          <span className="tag" style={{ background: topic.color + '33', color: topic.color }}><TopicIcon size={12} /> {topic.label}</span>
+          <span className="tag" style={{ background: topic.color, color: '#FFFFFF' }}><TopicIcon size={12} /> {topic.label}</span>
           <span className="age">{ageText(post.ageHours)}</span>
         </div>
         <p className="caption">{post.caption}</p>

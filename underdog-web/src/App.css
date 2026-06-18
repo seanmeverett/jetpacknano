@@ -10,7 +10,7 @@
 .chip { display:flex; align-items:center; gap:8px; padding:12px 14px; border-radius:999px; border:1.5px solid var(--border); background:var(--panel); }
 .chip .ml-auto { margin-left:auto; }
 .primary-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:17px; border-radius:14px; background:var(--brand); color:#fff; font-size:16px; font-weight:800; }
-.primary-btn.disabled { background:rgba(255,61,48,0.35); }
+.primary-btn.disabled { background:rgba(255,0,0,0.35); }
 
 /* ---------- Feed ---------- */
 .feed-wrap { height:100%; position:relative; }
@@ -108,7 +108,7 @@ input[type=range].good { accent-color:var(--good); }
 .interest-head { display:flex; align-items:center; gap:9px; padding:6px 8px; border-radius:10px; border:1.5px solid transparent; width:100%; }
 .interest-head.on .ml-auto, .interest-head .ml-auto { margin-left:auto; }
 .interest-item input[type=range] { margin-top:8px; accent-color:var(--brand); }
-.reset-btn { display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; border-radius:12px; border:1.5px solid rgba(255,92,92,0.4); color:var(--bad); font-size:14px; font-weight:800; }
+.reset-btn { display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; border-radius:12px; border:1.5px solid rgba(255,0,0,0.4); color:var(--bad); font-size:14px; font-weight:800; }
 .ml-auto { margin-left:auto; }
 
 /* ---------- Interactive: Follow state (cookie-backed) ---------- */
