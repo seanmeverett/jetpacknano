@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useApp } from '../store';
 import { POSTS, userById, topicById } from '../seed';
+import { POST_CREDIT } from '../postImageCredits';
 import { rankFeed, fmtCount } from '../rank';
 import type { RankedPost } from '../types';
 import { WhySheet } from './WhySheet';
@@ -108,6 +109,9 @@ function PostCard({ rp, liked, followed, onLike, onFollow, onWhy }: { rp: Ranked
         </div>
         <p className="caption">{post.caption}</p>
         <button className="why-link" onClick={onWhy}><IoSparkles size={13} color="var(--accent)" /> Why am I seeing this?</button>
+        {post.kind === 'image' && POST_CREDIT[post.id] && (
+          <a className="photo-credit" href={POST_CREDIT[post.id].source} target="_blank" rel="noreferrer">Photo: {POST_CREDIT[post.id].credit} &middot; {POST_CREDIT[post.id].license}</a>
+        )}
       </div>
     </section>
   );
