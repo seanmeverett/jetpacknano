@@ -1,5 +1,5 @@
 :root {
-  /* Jetpack Nano brand — pulled from jetpackmini.com: near-black red-tinted bg, red primary, neon-green positive */
+  /* Jetpack Nano brand — near-black red-tinted bg, shades-of-red accents (no green/orange) */
   --bg:#050000;
   --bg-soft:#120006;
   --panel:rgba(22,4,4,0.72);
@@ -9,13 +9,13 @@
   --text:#F5EDED;
   --dim:#B89B9B;
   --faint:#7A5C5C;
-  --brand:#ff3d30;
-  --brand-strong:#ff0000;
-  --brand2:#ff8438;
-  --accent:#00ff88;   /* reach / positive */
-  --good:#00ff88;
-  --bad:#ff3d30;
-  --warn:#ff8438;
+  --brand:#ff2d20;       /* normal red */
+  --brand-strong:#ff0000; /* bright red */
+  --brand2:#ff5a5a;       /* muted-light red */
+  --accent:#ff5050;      /* bright red — reach / positive */
+  --good:#ff5050;
+  --bad:#ff2d20;
+  --warn:#ff5a5a;        /* muted red */
   font-synthesis: none; text-rendering: optimizeLegibility;
 }
 * { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent; }

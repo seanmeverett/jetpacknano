@@ -8,12 +8,12 @@ export const theme = {
   text: '#F5EDED',
   textDim: '#B89B9B',
   textFaint: '#7A5C5C',
-  brand: '#ff3d30',
-  brand2: '#ff8438',
-  good: '#00ff88',
-  bad: '#ff3d30',
-  warn: '#ff8438',
-  accent: '#00ff88',
+  brand: '#ff2d20',
+  brand2: '#ff5a5a',
+  good: '#ff5050',
+  bad: '#ff2d20',
+  warn: '#ff5a5a',
+  accent: '#ff5050',
 };
 
 export const spacing = (n: number) => n * 4;

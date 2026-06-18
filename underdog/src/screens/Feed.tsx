@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   name: { color: theme.text, fontSize: 15.5, fontWeight: '800' },
   handle: { color: theme.textDim, fontSize: 12.5, marginTop: 1 },
   freshBadge: { backgroundColor: theme.good, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  freshText: { color: '#062', fontSize: 8.5, fontWeight: '900', letterSpacing: 0.4 },
+  freshText: { color: '#fff', fontSize: 8.5, fontWeight: '900', letterSpacing: 0.4 },
   followBtn: { borderWidth: 1.5, borderColor: theme.text, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7, marginLeft: 'auto' },
   followText: { color: theme.text, fontWeight: '800', fontSize: 13 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 9 },
