@@ -1,14 +1,14 @@
 import { supabase } from './supabaseClient';
 import { POSTS } from './seed';
-import type { Post } from './types';
+import type { Post, User } from './types';
 
-// DB row -> app Post (field names differ: snake_case -> camelCase)
 const mapRow = (r: any): Post => ({
   id: r.id,
   creatorId: r.creator_id,
   topic: r.topic,
   kind: r.kind,
   imageUrl: r.image_url ?? undefined,
+  tiktokUrl: r.tiktok_url ?? undefined,
   bgFrom: r.bg_from ?? undefined,
   bgTo: r.bg_to ?? undefined,
   caption: r.caption,
@@ -16,13 +16,29 @@ const mapRow = (r: any): Post => ({
   comments: r.comments,
   shares: r.shares,
   ageHours: r.age_hours,
-  tiktokUrl: r.tiktok_url ?? undefined,
 });
 
-// Load posts from Supabase if configured, else local seed. Always resolves.
+const mapUser = (r: any): User => ({
+  id: r.id,
+  name: r.name,
+  handle: r.handle,
+  followers: r.followers,
+  verified: !!r.verified,
+  joinedDaysAgo: r.joined_days_ago,
+});
+
 export async function loadPosts(): Promise<Post[]> {
   if (!supabase) return POSTS;
   const { data, error } = await supabase.from('posts').select('*').order('id', { ascending: true });
-  if (error || !data || data.length === 0) return POSTS; // graceful fallback
+  if (error || !data || data.length === 0) return POSTS;
   return data.map(mapRow);
+}
+
+export async function loadUsers(): Promise<Record<string, User>> {
+  if (!supabase) return {};
+  const { data, error } = await supabase.from('users').select('*');
+  if (error || !data) return {};
+  const map: Record<string, User> = {};
+  for (const r of data) map[r.id] = mapUser(r);
+  return map;
 }

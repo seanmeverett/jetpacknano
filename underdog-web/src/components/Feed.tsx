@@ -17,7 +17,7 @@ const initials = (name: string) => name.split(' ').map((p) => p[0]).slice(0, 2).
 const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h ago` : `${Math.round(h / 24)}d ago`);
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, setScreen, toggleLike, toggleFollow } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, setScreen, toggleLike, toggleFollow } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [idx, setIdx] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
@@ -36,8 +36,8 @@ export function Feed() {
   return (
     <div className="feed-wrap">
       <div className="feed" ref={scroller} onScroll={onScroll}>
-        {ranked.map((rp) => (
-          <PostCard key={rp.post.id} rp={rp} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} />
+        {ranked.map((rp, i) => (
+          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} />
         ))}
       </div>
 
@@ -56,9 +56,9 @@ export function Feed() {
   );
 }
 
-function PostCard({ rp, liked, followed, onLike, onFollow, onWhy }: { rp: RankedPost; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void }) {
+function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void }) {
   const { post, factors } = rp;
-  const creator = userById(post.creatorId);
+  const active = Math.abs(index - activeIndex) <= 1;
   const topic = topicById(post.topic);
   const TopicIcon = TOPIC_ICONS[post.topic];
   const freshFace = creator.followers < 100;
@@ -74,7 +74,7 @@ function PostCard({ rp, liked, followed, onLike, onFollow, onWhy }: { rp: Ranked
   return (
     <section className="card" style={{ background: post.kind === 'image' ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
       {post.kind === 'tiktok' && post.tiktokUrl
-        ? <TikTokEmbed url={post.tiktokUrl} />
+        ? (active ? <TikTokEmbed url={post.tiktokUrl} /> : <div className="tiktok-placeholder"><span>▶ TikTok</span></div>)
         : post.kind === 'image' && post.imageUrl && (post.imageUrl.endsWith('.mp4')
           ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted playsInline preload="metadata" />
           : <img src={post.imageUrl} alt="" className="card-bg" />)}

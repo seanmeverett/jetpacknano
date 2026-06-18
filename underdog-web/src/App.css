@@ -138,3 +138,4 @@ input[type=range].good { accent-color:var(--good); }
 /* ---------- TikTok embed card ---------- */
 .tiktok-card { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000; z-index:1; padding:8px; }
 .tiktok-card .tiktok-embed { background:#000; }
+.tiktok-placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#220000,#000); color:#FF0000; font-weight:800; font-size:20px; letter-spacing:1px; z-index:1; }
