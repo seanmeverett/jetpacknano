@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import type { ViewerPrefs, RankOptions, FeedMode, Post } from './types';
 import { TOPICS, POSTS } from './seed';
-import { loadPosts, loadUsers, loadComments } from './api';
+import { loadPosts, loadUsers, loadComments, fetchLiveFeed, liveToPosts } from './api';
 import { getCookie, setCookie, deleteCookie } from './cookies';
 
 type TopicId = ViewerPrefs['interests'] extends Record<infer K, number> ? K : never;
@@ -91,13 +91,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCookie(COOKIE, { onboardingDone, prefs, opts, liked, followed, comments });
   }, [onboardingDone, prefs, opts, liked, followed, comments]);
 
+  const refreshLive = useCallback((topics: string[]) => {
+    fetchLiveFeed(topics).then((items) => {
+      if (!items.length) return;
+      const { posts: lp, users: lu } = liveToPosts(items);
+      setPosts(lp);
+      setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
+    }).catch(() => {});
+  }, []);
+
   const finishOnboarding = useCallback((interests: TopicId[]) => {
     setPrefs({
       interests: { ...emptyInterests(), ...Object.fromEntries(interests.map((t) => [t, 1])) } as ViewerPrefs['interests'],
     });
     setOnboardingDone(true);
     setScreen('feed');
-  }, []);
+    refreshLive(interests as unknown as string[]);
+  }, [refreshLive]);
 
   const toggleInterest = useCallback((t: TopicId, on: boolean) => {
     setPrefs((p) => ({ interests: { ...p.interests, [t]: on ? 1 : 0 } as ViewerPrefs['interests'] }));

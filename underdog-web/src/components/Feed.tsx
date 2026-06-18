@@ -9,6 +9,7 @@ import { WhySheet } from './WhySheet';
 import { CommentSheet } from './CommentSheet';
 import { ShareSheet } from './ShareSheet';
 import { TikTokEmbed } from './TikTokEmbed';
+import { StoryView } from './StoryView';
 import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
@@ -94,9 +95,11 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
   };
 
   return (
-    <section className="card" style={{ background: (post.kind === 'image' || post.kind === 'video') ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
+    <section className="card" style={{ background: (post.kind === 'image' || post.kind === 'video' || post.kind === 'tiktok') ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
       {post.kind === 'tiktok' && post.tiktokUrl
         ? (active ? <TikTokEmbed url={post.tiktokUrl} /> : <div className="tiktok-placeholder"><span>▶ TikTok</span></div>)
+        : post.media && post.media.length > 1
+        ? <StoryView images={post.media} alt={post.caption} />
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
         ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted={cardMuted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
         : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : null}
@@ -138,9 +141,11 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         </div>
         <p className="caption">{post.caption}</p>
         <button className="why-link" onClick={onWhy}><IoSparkles size={13} color="var(--accent)" /> Why am I seeing this?</button>
-        {(post.kind === 'image' || post.kind === 'video') && (() => { const c = POST_CREDIT[post.id] || JPG_CREDIT[post.id]; return c ? (
-          <a className="photo-credit" href={c.source} target="_blank" rel="noreferrer">Photo: {c.credit} &middot; {c.license}</a>
-        ) : (post.kind === 'video' ? <a className="photo-credit" href="https://www.pexels.com" target="_blank" rel="noreferrer">Clip: Pexels &middot; Free License</a> : null); })()}
+        {post.permalink
+          ? <a className="photo-credit" href={post.permalink} target="_blank" rel="noreferrer">↗ {post.community || 'source'} &middot; open original</a>
+          : (post.kind === 'image' || post.kind === 'video') && (() => { const c = POST_CREDIT[post.id] || JPG_CREDIT[post.id]; return c ? (
+            <a className="photo-credit" href={c.source} target="_blank" rel="noreferrer">Photo: {c.credit} &middot; {c.license}</a>
+          ) : (post.kind === 'video' ? <a className="photo-credit" href="https://www.pexels.com" target="_blank" rel="noreferrer">Clip: Pexels &middot; Free License</a> : null); })()}
       </div>
     </section>
   );

@@ -18,6 +18,9 @@ export interface Post {
   kind: 'image' | 'text' | 'tiktok' | 'video';
   imageUrl?: string;
   tiktokUrl?: string;
+  media?: string[]; // story = multiple images
+  permalink?: string;
+  community?: string;
   bgFrom?: string;
   bgTo?: string;
   caption: string;
