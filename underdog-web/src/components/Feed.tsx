@@ -10,7 +10,7 @@ import { TikTokEmbed } from './TikTokEmbed';
 import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
-  IoSparkles, IoCheckmarkCircle,
+  IoSparkles, IoCheckmarkCircle, IoVolumeMuteOutline, IoVolumeHighOutline,
 } from '../icons';
 
 const initials = (name: string) => name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -59,6 +59,7 @@ export function Feed() {
 function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void }) {
   const { post, factors } = rp;
   const active = Math.abs(index - activeIndex) <= 1;
+  const [muted, setMuted] = useState(true);
   const topic = topicById(post.topic);
   const TopicIcon = TOPIC_ICONS[post.topic];
   const freshFace = creator.followers < 100;
@@ -75,8 +76,8 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
     <section className="card" style={{ background: (post.kind === 'image' || post.kind === 'video') ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
       {post.kind === 'tiktok' && post.tiktokUrl
         ? (active ? <TikTokEmbed url={post.tiktokUrl} /> : <div className="tiktok-placeholder"><span>▶ TikTok</span></div>)
-        : post.imageUrl && post.imageUrl.endsWith('.mp4')
-        ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
+        : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
+        ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted={muted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
         : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : null}
       <div className="tap-layer" onClick={tapBg} />
       <div className="grad-top" />
@@ -84,6 +85,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
       {burst && <div className="burst"><IoHeart size={92} color="var(--brand2)" /></div>}
 
       <div className="rail">
+        <button className="rail-btn vol-btn" onClick={() => setMuted((m) => !m)}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>
         <button className="rail-btn" onClick={onLike}>{liked ? <IoHeart size={32} color="var(--brand2)" /> : <IoHeartOutline size={32} />}<span style={{ color: liked ? 'var(--brand2)' : 'var(--text)' }}>{fmtCount(post.likes + (liked ? 1 : 0))}</span></button>
         <button className="rail-btn"><IoChatbubbleOutline size={32} /><span>{fmtCount(post.comments)}</span></button>
         <button className="rail-btn"><IoArrowRedoOutline size={30} /><span>{fmtCount(post.shares)}</span></button>
