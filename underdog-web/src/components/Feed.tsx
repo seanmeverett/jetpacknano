@@ -72,7 +72,9 @@ function PostCard({ rp, liked, followed, onLike, onFollow, onWhy }: { rp: Ranked
 
   return (
     <section className="card" style={{ background: post.kind === 'image' ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
-      {post.kind === 'image' && <img src={post.imageUrl} alt="" className="card-bg" />}
+      {post.kind === 'image' && post.imageUrl && (post.imageUrl.endsWith('.mp4')
+        ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted playsInline preload="metadata" />
+        : <img src={post.imageUrl} alt="" className="card-bg" />)}
       <div className="tap-layer" onClick={tapBg} />
       <div className="grad-top" />
       <div className="grad-bottom" />
