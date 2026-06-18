@@ -122,3 +122,10 @@ input[type=range].good { accent-color:var(--good); }
 /* ---------- Photo attribution (CC compliance) ---------- */
 .photo-credit { display:block; margin-top:8px; color:var(--faint); font-size:9.5px; font-weight:600; text-decoration:none; max-width:92%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .photo-credit:active { color:var(--dim); }
+
+/* ---------- Motion on every content card (GIFs animate; photos get Ken Burns) ---------- */
+.card-bg { animation: kenburns 18s ease-in-out infinite alternate; }
+@keyframes kenburns {
+  0%   { transform: scale(1.0) translate(0, 0); }
+  100% { transform: scale(1.12) translate(-1.5%, -1.5%); }
+}
