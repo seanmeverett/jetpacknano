@@ -23,10 +23,11 @@ const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h
 const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, comments, addComment, setScreen, toggleLike, toggleFollow } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
   const [shareFor, setShareFor] = useState<RankedPost | null>(null);
+  const mergedComments = (id: string) => [...(seedComments[id] ?? []), ...(comments[id] ?? [])];
   const [idx, setIdx] = useState(0);
   const [soundOn, setSoundOn] = useState(false); // global sound preference (persists across posts)
   const scroller = useRef<HTMLDivElement>(null);
@@ -54,7 +55,7 @@ export function Feed() {
     <div className="feed-wrap">
       <div className="feed" ref={scroller} onScroll={onScroll}>
         {ranked.map((rp, i) => (
-          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={comments[rp.post.id]?.length ?? 0} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} />
+          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={mergedComments(rp.post.id).length} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} />
         ))}
       </div>
 
@@ -69,7 +70,7 @@ export function Feed() {
       <div className="counter">{idx + 1}/{ranked.length}</div>
 
       <WhySheet ranked={why} onClose={() => setWhy(null)} />
-      {commentFor && <CommentSheet comments={comments[commentFor.post.id] ?? []} onClose={() => setCommentFor(null)} onAdd={(t) => addComment(commentFor.post.id, t)} />}
+      {commentFor && <CommentSheet comments={mergedComments(commentFor.post.id)} onClose={() => setCommentFor(null)} onAdd={(t) => addComment(commentFor.post.id, t)} />}
       {shareFor && <ShareSheet url={deeplink(shareFor.post.id)} onClose={() => setShareFor(null)} />}
     </div>
   );

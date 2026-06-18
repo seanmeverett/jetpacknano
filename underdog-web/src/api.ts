@@ -1,30 +1,18 @@
 import { supabase } from './supabaseClient';
 import { POSTS } from './seed';
 import type { Post, User } from './types';
+import type { Comment } from './store';
 
 const mapRow = (r: any): Post => ({
-  id: r.id,
-  creatorId: r.creator_id,
-  topic: r.topic,
-  kind: r.kind,
-  imageUrl: r.image_url ?? undefined,
-  tiktokUrl: r.tiktok_url ?? undefined,
-  bgFrom: r.bg_from ?? undefined,
-  bgTo: r.bg_to ?? undefined,
-  caption: r.caption,
-  likes: Number(r.likes),
-  comments: r.comments,
-  shares: r.shares,
-  ageHours: r.age_hours,
+  id: r.id, creatorId: r.creator_id, topic: r.topic, kind: r.kind,
+  imageUrl: r.image_url ?? undefined, tiktokUrl: r.tiktok_url ?? undefined,
+  bgFrom: r.bg_from ?? undefined, bgTo: r.bg_to ?? undefined, caption: r.caption,
+  likes: Number(r.likes), comments: r.comments, shares: r.shares, ageHours: r.age_hours,
 });
 
 const mapUser = (r: any): User => ({
-  id: r.id,
-  name: r.name,
-  handle: r.handle,
-  followers: r.followers,
-  verified: !!r.verified,
-  joinedDaysAgo: r.joined_days_ago,
+  id: r.id, name: r.name, handle: r.handle, followers: r.followers,
+  verified: !!r.verified, joinedDaysAgo: r.joined_days_ago,
 });
 
 export async function loadPosts(): Promise<Post[]> {
@@ -40,5 +28,18 @@ export async function loadUsers(): Promise<Record<string, User>> {
   if (error || !data) return {};
   const map: Record<string, User> = {};
   for (const r of data) map[r.id] = mapUser(r);
+  return map;
+}
+
+// Seed comments stored in Supabase (per post). ts comes back in seconds -> convert to ms.
+export async function loadComments(): Promise<Record<string, Comment[]>> {
+  if (!supabase) return {};
+  const { data, error } = await supabase.from('post_comments').select('id,post_id,author,text,ts');
+  if (error || !data) return {};
+  const map: Record<string, Comment[]> = {};
+  for (const r of data) {
+    const pid = r.post_id;
+    (map[pid] ??= []).push({ id: r.id, author: r.author, text: r.text, ts: Number(r.ts) * 1000 });
+  }
   return map;
 }

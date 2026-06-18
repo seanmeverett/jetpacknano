@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import type { ViewerPrefs, RankOptions, FeedMode, Post } from './types';
 import { TOPICS, POSTS } from './seed';
-import { loadPosts, loadUsers } from './api';
+import { loadPosts, loadUsers, loadComments } from './api';
 import { getCookie, setCookie, deleteCookie } from './cookies';
 
 type TopicId = ViewerPrefs['interests'] extends Record<infer K, number> ? K : never;
@@ -31,6 +31,7 @@ interface AppState {
   liked: Record<string, boolean>;
   followed: Record<string, boolean>;
   comments: Record<string, Comment[]>;
+  seedComments: Record<string, Comment[]>;
   screen: 'onboarding' | 'feed' | 'settings';
   setScreen: (s: AppState['screen']) => void;
   finishOnboarding: (interests: TopicId[]) => void;
@@ -81,6 +82,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Hydrate posts from Supabase when configured; otherwise keep local seed.
   useEffect(() => { let live = true; loadPosts().then((p) => { if (live && p.length) setPosts(p); }).catch(() => {}); return () => { live = false; }; }, []);
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
+  const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
+  useEffect(() => { let live = true; loadComments().then((m) => { if (live) setSeedComments(m); }).catch(() => {}); return () => { live = false; }; }, []);
   useEffect(() => { let live = true; loadUsers().then((m) => { if (live) setUsersMap(m); }).catch(() => {}); return () => { live = false; }; }, []);
 
   // Persist the meaningful state to a cookie whenever it changes.
@@ -135,12 +138,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AppState>(
     () => ({
-      onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, screen,
+      onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
       toggleLike, toggleFollow, addComment, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
