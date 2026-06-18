@@ -83,6 +83,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
+  // On mount: if already onboarded, start fetching live content immediately (don't wait for finishOnboarding)
+  useEffect(() => {
+    if (onboardingDone) {
+      const interests = Object.entries(prefs.interests).filter(([, w]) => w > 0).map(([t]) => t);
+      if (interests.length) refreshLive(interests);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount only
+
   // Instant load from localStorage cache (returning users see content immediately)
   useEffect(() => {
     if (!saved.onboardingDone) return;
