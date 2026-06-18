@@ -38,6 +38,15 @@ export function Feed() {
   // only fill it in + bump the displayed count, never reorder the feed (which would
   // snap the viewer to a different video).
   const ranked = useMemo<RankedPost[]>(() => rankFeed(posts, prefs, opts), [posts, prefs, opts]);
+
+  // Deep-link: if the URL has ?p=<postId>, snap the feed to that post.
+  useEffect(() => {
+    const pid = new URLSearchParams(window.location.search).get('p');
+    if (!pid || !scroller.current) return;
+    const idx = ranked.findIndex((r) => r.post.id === pid);
+    if (idx >= 0) scroller.current.scrollTo({ top: idx * scroller.current.clientHeight, behavior: 'auto' });
+  }, [ranked]);
+
   if (posts.length === 0) {
     return (
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -48,14 +57,6 @@ export function Feed() {
       </div>
     );
   }
-
-  // Deep-link: if the URL has ?p=<postId>, snap the feed to that post.
-  useEffect(() => {
-    const pid = new URLSearchParams(window.location.search).get('p');
-    if (!pid || !scroller.current) return;
-    const idx = ranked.findIndex((r) => r.post.id === pid);
-    if (idx >= 0) scroller.current.scrollTo({ top: idx * scroller.current.clientHeight, behavior: 'auto' });
-  }, [ranked]);
 
   const onScroll = () => {
     const el = scroller.current; if (!el) return;
