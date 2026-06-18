@@ -15,7 +15,7 @@ export interface Post {
   id: string;
   creatorId: string;
   topic: TopicId;
-  kind: 'image' | 'text' | 'tiktok' | 'video';
+  kind: 'image' | 'text' | 'tiktok' | 'video' | 'audio';
   imageUrl?: string;
   tiktokUrl?: string;
   media?: string[]; // story = multiple images
@@ -23,6 +23,9 @@ export interface Post {
   embedUrl?: string; // for embeddable providers (YouTube, etc.)
   provider?: string;
   thumb?: string;
+  format?: string; // media-format label for the badge
+  audio?: string; // audio-only url
+  duration?: number; // seconds
   community?: string;
   bgFrom?: string;
   bgTo?: string;

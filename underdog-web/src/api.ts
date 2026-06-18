@@ -17,9 +17,9 @@ const mapUser = (r: any): User => ({
 
 
 export interface LiveItem {
-  id: string; topic: string; type: 'video' | 'image' | 'text' | 'story';
+  id: string; topic: string; type: 'video' | 'image' | 'text' | 'story' | 'audio';
   title: string; author: string; community: string;
-  media?: string[]; permalink: string; likes: number; comments: number; ageHours: number;
+  media?: string[]; audio?: string; duration?: number; format: string; permalink: string; likes: number; comments: number; ageHours: number;
   embedUrl?: string; provider?: string; thumb?: string;
 }
 
@@ -41,10 +41,10 @@ export function liveToPosts(items: LiveItem[]): { posts: Post[]; users: User[] }
     if (!uids.has(uid)) { uids.add(uid); users.push({ id: uid, name: it.author, handle: it.author.replace(/^(u\/|@)/, ''), followers: 0, verified: false, joinedDaysAgo: 0 }); }
     return {
       id: it.id, creatorId: uid, topic: it.topic as any,
-      kind: it.embedUrl ? 'video' : it.type === 'video' ? 'video' : it.type === 'text' ? 'text' : 'image',
-      imageUrl: it.media?.[0], media: it.type === 'story' ? it.media : undefined,
+      kind: it.embedUrl ? 'video' : it.type === 'video' ? 'video' : it.type === 'audio' ? 'audio' : it.type === 'text' ? 'text' : 'image',
+      imageUrl: it.media?.[0], media: it.type === 'story' ? it.media : undefined, audio: it.audio, duration: it.duration,
       caption: it.title, likes: it.likes, comments: it.comments, shares: 0, ageHours: it.ageHours,
-      permalink: it.permalink, community: it.community,
+      permalink: it.permalink, community: it.community, format: it.format,
       embedUrl: it.embedUrl, provider: it.provider, thumb: it.thumb,
     } as Post;
   });

@@ -14,6 +14,7 @@ import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
   IoSparkles, IoCheckmarkCircle, IoVolumeMuteOutline, IoVolumeHighOutline,
+  IoTextOutline, IoImageOutline, IoAlbumsOutline, IoPlayCircleOutline, IoVideocamOutline, IoLogoYoutube, IoMusicalNotesOutline,
 } from '../icons';
 
 const initials = (name: string) => name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -77,6 +78,17 @@ export function Feed() {
   );
 }
 
+const FORMAT_ICONS: Record<string, any> = {
+  'text': IoTextOutline, 'image': IoImageOutline, 'story': IoAlbumsOutline, 'audio': IoMusicalNotesOutline,
+  'video': IoPlayCircleOutline, 'short video': IoPlayCircleOutline, 'long video': IoVideocamOutline, 'youtube': IoLogoYoutube,
+};
+const formatInfo = (post: any) => {
+  const fmt = post.format || (post.embedUrl ? 'youtube' : post.audio ? 'audio' : post.media && post.media.length > 1 ? 'story' : post.imageUrl && /\.mp4/.test(post.imageUrl) ? 'video' : post.imageUrl ? 'image' : 'text');
+  const Icon = FORMAT_ICONS[fmt] || IoTextOutline;
+  return { fmt, Icon };
+};
+const hasControllableAudio = (post: any) => !!(post.audio) || !!(post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl) && !post.embedUrl);
+
 function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, onComment, onShare, commentCount, muted, onToggleMute }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; onComment: () => void; onShare: () => void; commentCount: number; muted: boolean; onToggleMute: () => void }) {
   const { post, factors } = rp;
   const active = Math.abs(index - activeIndex) <= 1;
@@ -100,18 +112,21 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         ? (active ? <TikTokEmbed url={post.tiktokUrl} /> : <div className="tiktok-placeholder"><span>▶ TikTok</span></div>)
         : post.embedUrl
         ? (active ? <iframe className="card-bg yt-embed" src={post.embedUrl + '?autoplay=1&mute=1&playsinline=1&rel=0'} title={post.caption} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen /> : <img className="card-bg" src={post.thumb} alt="" />)
+        : post.audio
+        ? <div className="audio-card"><IoMusicalNotesOutline size={48} color="var(--brand)" /><span className="audio-label">Audio post</span><audio src={post.audio} autoPlay loop muted={cardMuted} playsInline /></div>
         : post.media && post.media.length > 1
         ? <StoryView images={post.media} alt={post.caption} />
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
         ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted={cardMuted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
-        : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : null}
+        : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : <div className="text-center"><p className="text-body">{post.caption}</p></div>}
       <div className="tap-layer" onClick={tapBg} />
       <div className="grad-top" />
+      <div className="media-badge">{(() => { const fi = formatInfo(post); return <><fi.Icon size={14} /> <span>{fi.fmt}</span></>; })()}</div>
       <div className="grad-bottom" />
       {burst && <div className="burst"><IoHeart size={92} color="var(--brand2)" /></div>}
 
       <div className="rail">
-        <button className="rail-btn vol-btn" onClick={onToggleMute}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>
+        {hasControllableAudio(post) && <button className="rail-btn vol-btn" onClick={onToggleMute}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>}
         <button className="rail-btn" onClick={onLike}>{liked ? <IoHeart size={32} color="var(--brand2)" /> : <IoHeartOutline size={32} />}<span style={{ color: liked ? 'var(--brand2)' : 'var(--text)' }}>{fmtCount(post.likes + (liked ? 1 : 0))}</span></button>
         <button className="rail-btn" onClick={onComment}><IoChatbubbleOutline size={32} /><span>{fmtCount(post.comments + commentCount)}</span></button>
         <button className="rail-btn" onClick={onShare}><IoArrowRedoOutline size={30} /><span>{fmtCount(post.shares)}</span></button>
