@@ -6,6 +6,7 @@ import { POST_CREDIT as JPG_CREDIT } from '../postImageCreditsJpg';
 import { rankFeed, fmtCount } from '../rank';
 import type { RankedPost } from '../types';
 import { WhySheet } from './WhySheet';
+import { TikTokEmbed } from './TikTokEmbed';
 import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
@@ -72,9 +73,11 @@ function PostCard({ rp, liked, followed, onLike, onFollow, onWhy }: { rp: Ranked
 
   return (
     <section className="card" style={{ background: post.kind === 'image' ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
-      {post.kind === 'image' && post.imageUrl && (post.imageUrl.endsWith('.mp4')
-        ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted playsInline preload="metadata" />
-        : <img src={post.imageUrl} alt="" className="card-bg" />)}
+      {post.kind === 'tiktok' && post.tiktokUrl
+        ? <TikTokEmbed url={post.tiktokUrl} />
+        : post.kind === 'image' && post.imageUrl && (post.imageUrl.endsWith('.mp4')
+          ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted playsInline preload="metadata" />
+          : <img src={post.imageUrl} alt="" className="card-bg" />)}
       <div className="tap-layer" onClick={tapBg} />
       <div className="grad-top" />
       <div className="grad-bottom" />

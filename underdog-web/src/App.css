@@ -134,3 +134,7 @@ input[type=range].good { accent-color:var(--good); }
 .brand-icon { display:inline-block; width:24px; height:17px; background:var(--brand); vertical-align:-3px;
   -webkit-mask:url('/jetpack-icon.svg') no-repeat center/contain; mask:url('/jetpack-icon.svg') no-repeat center/contain; }
 .brand-icon.logo-icon { width:30px; height:21px; vertical-align:-4px; }
+
+/* ---------- TikTok embed card ---------- */
+.tiktok-card { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000; z-index:1; padding:8px; }
+.tiktok-card .tiktok-embed { background:#000; }

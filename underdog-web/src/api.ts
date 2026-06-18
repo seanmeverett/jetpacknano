@@ -16,6 +16,7 @@ const mapRow = (r: any): Post => ({
   comments: r.comments,
   shares: r.shares,
   ageHours: r.age_hours,
+  tiktokUrl: r.tiktok_url ?? undefined,
 });
 
 // Load posts from Supabase if configured, else local seed. Always resolves.
