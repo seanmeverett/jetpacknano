@@ -22,10 +22,10 @@ export function Feed() {
   const [idx, setIdx] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
 
-  const ranked = useMemo<RankedPost[]>(() => {
-    const eff = posts.map((p) => ({ ...p, likes: p.likes + (liked[p.id] ? 1 : 0) }));
-    return rankFeed(eff, prefs, opts);
-  }, [posts, prefs, opts, liked]);
+  // NOTE: ranking intentionally does NOT depend on `liked` — tapping the heart should
+  // only fill it in + bump the displayed count, never reorder the feed (which would
+  // snap the viewer to a different video).
+  const ranked = useMemo<RankedPost[]>(() => rankFeed(posts, prefs, opts), [posts, prefs, opts]);
 
   const onScroll = () => {
     const el = scroller.current; if (!el) return;
