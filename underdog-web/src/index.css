@@ -9,6 +9,13 @@
   --text:#FFFFFF;
   --dim:#B5B5B5;
   --faint:#7A7A7A;
+  --brand:#FF0000;        /* bright red */
+  --brand-strong:#FF0000;
+  --brand2:#990000;       /* muted red */
+  --accent:#FF0000;       /* bright red — reach / positive */
+  --good:#FF0000;
+  --bad:#FF0000;
+  --warn:#990000;         /* muted red */
   font-synthesis: none; text-rendering: optimizeLegibility;
 }
 * { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent; }

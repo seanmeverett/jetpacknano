@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../store';
 import { TOPICS } from '../seed';
-import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline, IoRocketOutline } from '../icons';
+import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline } from '../icons';
 
 export function Onboarding() {
   const { finishOnboarding } = useApp();
@@ -13,7 +13,7 @@ export function Onboarding() {
   return (
     <div className="onboard" style={{ background: 'radial-gradient(120% 80% at 50% 0%, #590000 0%, #000000 70%)' }}>
       <div className="onboard-scroll">
-        <div className="logo-row"><IoRocketOutline size={24} color="var(--brand)" /><span className="logo">Jetpack Nano</span></div>
+        <div className="logo-row"><span className="brand-icon logo-icon" /><span className="logo">Jetpack Nano</span></div>
         <h1 className="h1">Where zero wins.</h1>
         <p className="lede">The feed that spreads attention around. Posts with fewer likes reach farther — so you meet original people, not the same five accounts. Pick a few things you like and we'll show you the originals.</p>
         <div className="section-label">Choose at least 3 interests</div>
