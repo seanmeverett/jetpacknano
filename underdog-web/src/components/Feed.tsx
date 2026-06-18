@@ -20,6 +20,7 @@ export function Feed() {
   const { prefs, opts, liked, followed, posts, usersMap, setScreen, toggleLike, toggleFollow } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [idx, setIdx] = useState(0);
+  const [soundOn, setSoundOn] = useState(false); // global sound preference (persists across posts)
   const scroller = useRef<HTMLDivElement>(null);
 
   // NOTE: ranking intentionally does NOT depend on `liked` — tapping the heart should
@@ -37,7 +38,7 @@ export function Feed() {
     <div className="feed-wrap">
       <div className="feed" ref={scroller} onScroll={onScroll}>
         {ranked.map((rp, i) => (
-          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} />
+          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} />
         ))}
       </div>
 
@@ -56,10 +57,11 @@ export function Feed() {
   );
 }
 
-function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void }) {
+function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, muted, onToggleMute }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; muted: boolean; onToggleMute: () => void }) {
   const { post, factors } = rp;
   const active = Math.abs(index - activeIndex) <= 1;
-  const [muted, setMuted] = useState(true);
+  // only the active card can ever play sound; adjacent pre-mounted videos stay muted
+  const cardMuted = muted || index !== activeIndex;
   const topic = topicById(post.topic);
   const TopicIcon = TOPIC_ICONS[post.topic];
   const freshFace = creator.followers < 100;
@@ -77,7 +79,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
       {post.kind === 'tiktok' && post.tiktokUrl
         ? (active ? <TikTokEmbed url={post.tiktokUrl} /> : <div className="tiktok-placeholder"><span>▶ TikTok</span></div>)
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
-        ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted={muted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
+        ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted={cardMuted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
         : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : null}
       <div className="tap-layer" onClick={tapBg} />
       <div className="grad-top" />
@@ -85,7 +87,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
       {burst && <div className="burst"><IoHeart size={92} color="var(--brand2)" /></div>}
 
       <div className="rail">
-        <button className="rail-btn vol-btn" onClick={() => setMuted((m) => !m)}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>
+        <button className="rail-btn vol-btn" onClick={onToggleMute}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>
         <button className="rail-btn" onClick={onLike}>{liked ? <IoHeart size={32} color="var(--brand2)" /> : <IoHeartOutline size={32} />}<span style={{ color: liked ? 'var(--brand2)' : 'var(--text)' }}>{fmtCount(post.likes + (liked ? 1 : 0))}</span></button>
         <button className="rail-btn"><IoChatbubbleOutline size={32} /><span>{fmtCount(post.comments)}</span></button>
         <button className="rail-btn"><IoArrowRedoOutline size={30} /><span>{fmtCount(post.shares)}</span></button>
