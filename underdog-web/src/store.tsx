@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
-import type { ViewerPrefs, RankOptions, FeedMode } from './types';
-import { TOPICS } from './seed';
+import type { ViewerPrefs, RankOptions, FeedMode, Post } from './types';
+import { TOPICS, POSTS } from './seed';
+import { loadPosts } from './api';
 import { getCookie, setCookie, deleteCookie } from './cookies';
 
 type TopicId = ViewerPrefs['interests'] extends Record<infer K, number> ? K : never;
@@ -15,6 +16,7 @@ interface Persisted {
 
 interface AppState {
   onboardingDone: boolean;
+  posts: Post[];
   prefs: ViewerPrefs;
   opts: RankOptions;
   liked: Record<string, boolean>;
@@ -62,6 +64,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [opts, setOpts] = useState<RankOptions>(saved.opts ?? defaultOpts);
   const [liked, setLiked] = useState<Record<string, boolean>>(saved.liked ?? {});
   const [followed, setFollowed] = useState<Record<string, boolean>>(saved.followed ?? {});
+  const [posts, setPosts] = useState<Post[]>(POSTS);
+
+  // Hydrate posts from Supabase when configured; otherwise keep local seed.
+  useEffect(() => { let live = true; loadPosts().then((p) => { if (live && p.length) setPosts(p); }).catch(() => {}); return () => { live = false; }; }, []);
 
   // Persist the meaningful state to a cookie whenever it changes.
   useEffect(() => {
@@ -108,12 +114,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AppState>(
     () => ({
-      onboardingDone, prefs, opts, liked, followed, screen,
+      onboardingDone, posts, prefs, opts, liked, followed, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
       toggleLike, toggleFollow, reset,
     }),
-    [onboardingDone, prefs, opts, liked, followed, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, reset]
+    [onboardingDone, posts, prefs, opts, liked, followed, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

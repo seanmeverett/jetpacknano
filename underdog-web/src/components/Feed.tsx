@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useApp } from '../store';
-import { POSTS, userById, topicById } from '../seed';
+import { userById, topicById } from '../seed';
 import { POST_CREDIT } from '../postImageCredits';
 import { POST_CREDIT as JPG_CREDIT } from '../postImageCreditsJpg';
 import { rankFeed, fmtCount } from '../rank';
@@ -16,15 +16,15 @@ const initials = (name: string) => name.split(' ').map((p) => p[0]).slice(0, 2).
 const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h ago` : `${Math.round(h / 24)}d ago`);
 
 export function Feed() {
-  const { prefs, opts, liked, followed, setScreen, toggleLike, toggleFollow } = useApp();
+  const { prefs, opts, liked, followed, posts, setScreen, toggleLike, toggleFollow } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [idx, setIdx] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
 
   const ranked = useMemo<RankedPost[]>(() => {
-    const eff = POSTS.map((p) => ({ ...p, likes: p.likes + (liked[p.id] ? 1 : 0) }));
+    const eff = posts.map((p) => ({ ...p, likes: p.likes + (liked[p.id] ? 1 : 0) }));
     return rankFeed(eff, prefs, opts);
-  }, [prefs, opts, liked]);
+  }, [posts, prefs, opts, liked]);
 
   const onScroll = () => {
     const el = scroller.current; if (!el) return;

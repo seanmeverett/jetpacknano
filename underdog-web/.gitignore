@@ -25,3 +25,8 @@ dist-ssr
 
 # Generated poster build artifacts
 scripts/**/*.js
+.vercel
+
+# Supabase / local env
+.env
+.env.*
