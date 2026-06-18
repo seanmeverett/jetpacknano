@@ -1,4 +1,5 @@
 import type { Post, User } from './types';
+import { POST_IMAGE } from './postImages';
 
 export const TOPICS = [
   { id: 'music', label: 'Music', icon: 'musical-notes', color: '#ff2d20' },
@@ -124,7 +125,7 @@ export const POSTS: Post[] = ROWS.map((r, i) => {
     creatorId: USERS[cIdx].id,
     topic,
     kind,
-    imageUrl: kind === 'image' ? `/posts/p${i + 1}.svg` : undefined,
+    imageUrl: kind === 'image' ? POST_IMAGE[`p${i + 1}`] : undefined,
     bgFrom,
     bgTo,
     caption,
