@@ -11,7 +11,7 @@ export function Onboarding() {
   const ready = picked.length >= 3;
 
   return (
-    <div className="onboard" style={{ background: 'linear-gradient(rgba(6,6,12,0.86), rgba(6,6,12,0.92)), url(https://picsum.photos/seed/jetpacknano-hero/900/1600) center/cover' }}>
+    <div className="onboard" style={{ background: 'radial-gradient(120% 80% at 50% 0%, #2a0000 0%, #050000 70%)' }}>
       <div className="onboard-scroll">
         <div className="logo-row"><IoRocketOutline size={24} color="var(--brand)" /><span className="logo">Jetpack Nano</span></div>
         <h1 className="h1">Where zero wins.</h1>
