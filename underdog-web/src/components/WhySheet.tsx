@@ -26,7 +26,7 @@ export function WhySheet({ ranked, onClose }: { ranked: RankedPost | null; onClo
         <Bar label="Relevance to you" value={f.relevance} color="var(--brand2)" note={f.relevance > 0.5 ? 'Matches an interest you picked.' : 'Discovery baseline — outside your picks, surfaced for variety.'} />
         <Bar label="Freshness" value={f.freshness} color="var(--good)" note={f.freshness > 0.7 ? 'Posted recently.' : 'Older post, freshness decay applies.'} />
         <Bar label="Creator diversity" value={f.diversity} color="var(--warn)" note={f.diversity > 0.8 ? "You haven't seen much from this creator." : "You've seen this creator recently, so reach is lowered to spread attention."} />
-        <div className="explainer"><IoInformationCircleOutline size={16} color="var(--faint)" /><span>Standard apps rank by likes, so attention concentrates on a few huge accounts. Underdog multiplies relevance by an inverse-reach boost: the fewer the likes, the farther it spreads. Combined with creator diversity, attention gets shared across many more people.</span></div>
+        <div className="explainer"><IoInformationCircleOutline size={16} color="var(--faint)" /><span>Standard apps rank by likes, so attention concentrates on a few huge accounts. Jetpack Nano multiplies relevance by an inverse-reach boost: the fewer the likes, the farther it spreads. Combined with creator diversity, attention gets shared across many more people.</span></div>
       </div>
     </div>
   );

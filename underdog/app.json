@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "underdog",
-    "slug": "underdog",
+    "name": "Jetpack Nano",
+    "slug": "jetpacknano",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

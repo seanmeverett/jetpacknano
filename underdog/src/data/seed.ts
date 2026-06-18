@@ -124,7 +124,7 @@ export const POSTS: Post[] = ROWS.map((r, i) => {
     creatorId: USERS[cIdx].id,
     topic,
     kind,
-    imageUrl: kind === 'image' ? `https://picsum.photos/seed/underdog${i + 1}/800/1400` : undefined,
+    imageUrl: kind === 'image' ? `https://picsum.photos/seed/jetpacknano${i + 1}/800/1400` : undefined,
     bgFrom,
     bgTo,
     caption,

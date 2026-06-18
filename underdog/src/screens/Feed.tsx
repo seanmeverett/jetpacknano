@@ -78,7 +78,7 @@ export function Feed() {
       {/* Top bar */}
       <SafeAreaView edges={['top']} style={styles.topBarWrap} pointerEvents="box-none">
         <View style={styles.topBar}>
-          <Text style={styles.brand}>Underdog</Text>
+          <Text style={styles.brand}>Jetpack Nano</Text>
           <Pressable
             onPress={() => setScreen('settings')}
             style={[styles.modePill, { borderColor: opts.mode === 'inverse' ? theme.brand : theme.warn }]}

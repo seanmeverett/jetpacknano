@@ -33,7 +33,7 @@ interface AppState {
   reset: () => void;
 }
 
-const COOKIE = 'underdog_state';
+const COOKIE = 'jetpacknano_state';
 
 const emptyInterests = () =>
   TOPICS.reduce((acc, t) => {

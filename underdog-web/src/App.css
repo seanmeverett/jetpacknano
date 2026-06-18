@@ -10,7 +10,7 @@
 .chip { display:flex; align-items:center; gap:8px; padding:12px 14px; border-radius:999px; border:1.5px solid var(--border); background:var(--panel); }
 .chip .ml-auto { margin-left:auto; }
 .primary-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:17px; border-radius:14px; background:var(--brand); color:#fff; font-size:16px; font-weight:800; }
-.primary-btn.disabled { background:rgba(124,92,255,0.35); }
+.primary-btn.disabled { background:rgba(255,61,48,0.35); }
 
 /* ---------- Feed ---------- */
 .feed-wrap { height:100%; position:relative; }
@@ -25,7 +25,7 @@
 @keyframes burst { 0%{opacity:0;transform:scale(0.4)} 40%{opacity:0.9} 100%{opacity:0;transform:scale(1.5)} }
 
 .topbar { position:absolute; top:0; left:0; right:0; display:flex; align-items:center; justify-content:space-between; padding:12px 18px; z-index:5; }
-.brand { font-size:19px; font-weight:900; letter-spacing:0.4px; }
+.brand { font-size:19px; font-weight:900; letter-spacing:0.2px; color:var(--text); }
 .mode-pill { display:flex; align-items:center; gap:5px; padding:6px 11px; border-radius:999px; border:1.5px solid; background:rgba(0,0,0,0.35); font-size:12px; font-weight:800; }
 .mode-pill.inverse { border-color:var(--brand); color:var(--brand); }
 .mode-pill.standard { border-color:var(--warn); color:var(--warn); }

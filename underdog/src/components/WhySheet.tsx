@@ -72,7 +72,7 @@ export function WhySheet({ ranked, visible, onClose }: Props) {
                 <Ionicons name="information-circle" size={16} color={theme.textFaint} />
                 <Text style={styles.explainerText}>
                   Standard apps rank by likes, so attention concentrates on a few huge
-                  accounts. Underdog multiplies relevance by an inverse-reach boost:
+                  accounts. Jetpack Nano multiplies relevance by an inverse-reach boost:
                   the fewer the likes, the farther it spreads. Combined with creator
                   diversity, attention gets shared across many more people.
                 </Text>

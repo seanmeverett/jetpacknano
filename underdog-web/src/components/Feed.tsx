@@ -7,7 +7,7 @@ import { WhySheet } from './WhySheet';
 import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
-  IoSparkles, IoCheckmarkCircle,
+  IoSparkles, IoCheckmarkCircle, IoRocketOutline,
 } from '../icons';
 
 const initials = (name: string) => name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -39,7 +39,7 @@ export function Feed() {
       </div>
 
       <div className="topbar">
-        <span className="brand">Underdog</span>
+        <span className="brand"><IoRocketOutline size={18} color="var(--brand)" style={{verticalAlign:"-2px"}} />&nbsp;Jetpack Nano</span>
         <button className={`mode-pill ${opts.mode}`} onClick={() => setScreen('settings')}>
           {opts.mode === 'inverse' ? <IoTrendingDownOutline size={13} /> : <IoTrendingUpOutline size={13} />}
           {opts.mode === 'inverse' ? 'Inverse' : 'Standard'}

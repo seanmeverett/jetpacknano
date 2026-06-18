@@ -17,7 +17,7 @@ export function Onboarding() {
 
   return (
     <ImageBackground
-      source={{ uri: 'https://picsum.photos/seed/underdog-hero/900/1600' }}
+      source={{ uri: 'https://picsum.photos/seed/jetpacknano-hero/900/1600' }}
       style={styles.bg}
       blurRadius={28}
     >
@@ -25,14 +25,14 @@ export function Onboarding() {
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.logoRow}>
-            <Ionicons name="paw" size={26} color={theme.brand2} />
-            <Text style={styles.logo}>Underdog</Text>
+            <Ionicons name="rocket" size={26} color={theme.brand} />
+            <Text style={styles.logo}>Jetpack Nano</Text>
           </View>
           <Text style={styles.h1}>Where zero wins.</Text>
           <Text style={styles.lede}>
             The feed that spreads attention around. Posts with fewer likes reach
             farther — so you meet original people, not the same five accounts. Pick a
-            few things you like and we'll show you the underdogs.
+            few things you like and we'll show you the originals.
           </Text>
 
           <Text style={styles.sectionLabel}>Choose at least 3 interests</Text>

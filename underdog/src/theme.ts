@@ -1,18 +1,19 @@
+// Jetpack Nano brand — palette adapted from jetpackmini.com
 export const theme = {
-  bg: '#0A0A0F',
-  bgSoft: '#131319',
-  panel: 'rgba(20,20,28,0.72)',
-  panelSolid: '#16161E',
-  border: 'rgba(255,255,255,0.10)',
-  text: '#F4F4F8',
-  textDim: '#A9A9B8',
-  textFaint: '#6E6E7E',
-  brand: '#7C5CFF',
-  brand2: '#FF5C9D',
-  good: '#34C759',
-  bad: '#FF5C5C',
-  warn: '#FFB14E',
-  accent: '#5CD8E8',
+  bg: '#050000',
+  bgSoft: '#120006',
+  panel: 'rgba(22,4,4,0.72)',
+  panelSolid: '#0D0204',
+  border: 'rgba(255,60,48,0.16)',
+  text: '#F5EDED',
+  textDim: '#B89B9B',
+  textFaint: '#7A5C5C',
+  brand: '#ff3d30',
+  brand2: '#ff8438',
+  good: '#00ff88',
+  bad: '#ff3d30',
+  warn: '#ff8438',
+  accent: '#00ff88',
 };
 
 export const spacing = (n: number) => n * 4;
