@@ -179,3 +179,6 @@ input[type=range].good { accent-color:var(--good); }
 .audio-card { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:linear-gradient(135deg,#220000,#000); z-index:1; }
 .audio-card .audio-label { color:var(--text); font-size:16px; font-weight:700; }
 .audio-card audio { display:none; }
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+.loading-text { color: var(--text); font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.loading-sub { color: var(--text-faint); font-size: 14px; text-align: center; max-width: 280px; line-height: 1.4; }

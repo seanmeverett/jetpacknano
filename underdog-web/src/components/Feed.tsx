@@ -38,6 +38,16 @@ export function Feed() {
   // only fill it in + bump the displayed count, never reorder the feed (which would
   // snap the viewer to a different video).
   const ranked = useMemo<RankedPost[]>(() => rankFeed(posts, prefs, opts), [posts, prefs, opts]);
+  if (posts.length === 0) {
+    return (
+      <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="loading-state">
+          <div className="loading-text">Finding fresh content for you…</div>
+          <div className="loading-sub">Searching the open social web + YouTube for your interests.</div>
+        </div>
+      </div>
+    );
+  }
 
   // Deep-link: if the URL has ?p=<postId>, snap the feed to that post.
   useEffect(() => {

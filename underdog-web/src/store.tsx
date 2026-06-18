@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import type { ViewerPrefs, RankOptions, FeedMode, Post } from './types';
-import { TOPICS, POSTS } from './seed';
-import { loadPosts, loadUsers, loadComments, fetchLiveFeed, liveToPosts } from './api';
+import { TOPICS } from './seed';
+import { loadUsers, loadComments, fetchLiveFeed, liveToPosts } from './api';
 import { getCookie, setCookie, deleteCookie } from './cookies';
 
 type TopicId = ViewerPrefs['interests'] extends Record<infer K, number> ? K : never;
@@ -77,10 +77,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [liked, setLiked] = useState<Record<string, boolean>>(saved.liked ?? {});
   const [followed, setFollowed] = useState<Record<string, boolean>>(saved.followed ?? {});
   const [comments, setComments] = useState<Record<string, Comment[]>>(saved.comments ?? {});
-  const [posts, setPosts] = useState<Post[]>(POSTS);
+  const [posts, setPosts] = useState<Post[]>([]); // live-only, no stock seed
 
-  // Hydrate posts from Supabase when configured; otherwise keep local seed.
-  useEffect(() => { let live = true; loadPosts().then((p) => { if (live && p.length) setPosts(p); }).catch(() => {}); return () => { live = false; }; }, []);
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
   useEffect(() => { let live = true; loadComments().then((m) => { if (live) setSeedComments(m); }).catch(() => {}); return () => { live = false; }; }, []);

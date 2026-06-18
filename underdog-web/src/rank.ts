@@ -1,5 +1,4 @@
 import type { Post, RankedPost, RankOptions, ViewerPrefs, TopicId } from './types';
-import { POSTS } from './seed';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -42,7 +41,7 @@ const baseWeights = (mode: RankOptions['mode']) =>
     : { rel: 0.3, reach: 0.55, fresh: 0.15 };
 
 export function rankFeed(
-  posts: Post[] = POSTS,
+  posts: Post[] = [],
   prefs: ViewerPrefs,
   opts: RankOptions,
   recentlySeenCreators: string[] = []
