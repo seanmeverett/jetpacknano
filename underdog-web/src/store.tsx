@@ -6,12 +6,20 @@ import { getCookie, setCookie, deleteCookie } from './cookies';
 
 type TopicId = ViewerPrefs['interests'] extends Record<infer K, number> ? K : never;
 
+export interface Comment {
+  id: string;
+  text: string;
+  ts: number;
+  author: string;
+}
+
 interface Persisted {
   onboardingDone: boolean;
   prefs: ViewerPrefs;
   opts: RankOptions;
   liked: Record<string, boolean>;
   followed: Record<string, boolean>;
+  comments: Record<string, Comment[]>;
 }
 
 interface AppState {
@@ -22,6 +30,7 @@ interface AppState {
   opts: RankOptions;
   liked: Record<string, boolean>;
   followed: Record<string, boolean>;
+  comments: Record<string, Comment[]>;
   screen: 'onboarding' | 'feed' | 'settings';
   setScreen: (s: AppState['screen']) => void;
   finishOnboarding: (interests: TopicId[]) => void;
@@ -33,6 +42,7 @@ interface AppState {
   setFreshnessHalfLife: (h: number) => void;
   toggleLike: (postId: string) => void;
   toggleFollow: (creatorId: string) => void;
+  addComment: (postId: string, text: string) => void;
   reset: () => void;
 }
 
@@ -65,6 +75,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [opts, setOpts] = useState<RankOptions>(saved.opts ?? defaultOpts);
   const [liked, setLiked] = useState<Record<string, boolean>>(saved.liked ?? {});
   const [followed, setFollowed] = useState<Record<string, boolean>>(saved.followed ?? {});
+  const [comments, setComments] = useState<Record<string, Comment[]>>(saved.comments ?? {});
   const [posts, setPosts] = useState<Post[]>(POSTS);
 
   // Hydrate posts from Supabase when configured; otherwise keep local seed.
@@ -74,8 +85,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Persist the meaningful state to a cookie whenever it changes.
   useEffect(() => {
-    setCookie(COOKIE, { onboardingDone, prefs, opts, liked, followed });
-  }, [onboardingDone, prefs, opts, liked, followed]);
+    setCookie(COOKIE, { onboardingDone, prefs, opts, liked, followed, comments });
+  }, [onboardingDone, prefs, opts, liked, followed, comments]);
 
   const finishOnboarding = useCallback((interests: TopicId[]) => {
     setPrefs({
@@ -105,9 +116,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFollowed((f) => ({ ...f, [creatorId]: !f[creatorId] }));
   }, []);
 
+  const addComment = useCallback((postId: string, text: string) => {
+    const clean = text.trim().slice(0, 280);
+    if (!clean) return;
+    setComments((c) => ({ ...c, [postId]: [...(c[postId] ?? []), { id: 'c' + Date.now(), text: clean, ts: Date.now(), author: 'you' }] }));
+  }, []);
+
   const reset = useCallback(() => {
     setLiked({});
     setFollowed({});
+    setComments({});
     setPrefs({ interests: emptyInterests() });
     setOpts(defaultOpts);
     setOnboardingDone(false);
@@ -117,12 +135,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AppState>(
     () => ({
-      onboardingDone, posts, usersMap, prefs, opts, liked, followed, screen,
+      onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, reset,
+      toggleLike, toggleFollow, addComment, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

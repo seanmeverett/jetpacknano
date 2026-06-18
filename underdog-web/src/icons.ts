@@ -6,7 +6,7 @@ import {
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
   IoSparkles, IoCheckmarkCircle, IoClose, IoInformationCircleOutline, IoChevronBack,
   IoRefreshOutline, IoSwapHorizontalOutline, IoPeopleOutline, IoTimeOutline, IoCheckmark,
-  IoArrowForwardOutline, IoRocketOutline, IoVolumeMuteOutline, IoVolumeHighOutline,
+  IoArrowForwardOutline, IoRocketOutline, IoVolumeMuteOutline, IoVolumeHighOutline, IoSendOutline, IoCopyOutline, IoShareOutline, IoLinkOutline,
 } from 'react-icons/io5';
 
 export const TOPIC_ICONS: Record<string, any> = {
@@ -20,5 +20,5 @@ export {
   IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline, IoHeart, IoHeartOutline,
   IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline, IoSparkles,
   IoCheckmarkCircle, IoClose, IoInformationCircleOutline, IoChevronBack, IoRefreshOutline,
-  IoSwapHorizontalOutline, IoPeopleOutline, IoTimeOutline, IoCheckmark, IoArrowForwardOutline, IoPawOutline, IoRocketOutline, IoVolumeMuteOutline, IoVolumeHighOutline,
+  IoSwapHorizontalOutline, IoPeopleOutline, IoTimeOutline, IoCheckmark, IoArrowForwardOutline, IoPawOutline, IoRocketOutline, IoVolumeMuteOutline, IoVolumeHighOutline, IoSendOutline, IoCopyOutline, IoShareOutline, IoLinkOutline,
 };

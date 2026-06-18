@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { userById, topicById } from '../seed';
 import { POST_CREDIT } from '../postImageCredits';
@@ -6,6 +6,8 @@ import { POST_CREDIT as JPG_CREDIT } from '../postImageCreditsJpg';
 import { rankFeed, fmtCount } from '../rank';
 import type { RankedPost } from '../types';
 import { WhySheet } from './WhySheet';
+import { CommentSheet } from './CommentSheet';
+import { ShareSheet } from './ShareSheet';
 import { TikTokEmbed } from './TikTokEmbed';
 import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
@@ -16,9 +18,15 @@ import {
 const initials = (name: string) => name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h ago` : `${Math.round(h / 24)}d ago`);
 
+
+// Build a shareable deeplink URL for a single post (?p=<id>).
+const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
+
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, setScreen, toggleLike, toggleFollow } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, addComment, setScreen, toggleLike, toggleFollow } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
+  const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
+  const [shareFor, setShareFor] = useState<RankedPost | null>(null);
   const [idx, setIdx] = useState(0);
   const [soundOn, setSoundOn] = useState(false); // global sound preference (persists across posts)
   const scroller = useRef<HTMLDivElement>(null);
@@ -27,6 +35,14 @@ export function Feed() {
   // only fill it in + bump the displayed count, never reorder the feed (which would
   // snap the viewer to a different video).
   const ranked = useMemo<RankedPost[]>(() => rankFeed(posts, prefs, opts), [posts, prefs, opts]);
+
+  // Deep-link: if the URL has ?p=<postId>, snap the feed to that post.
+  useEffect(() => {
+    const pid = new URLSearchParams(window.location.search).get('p');
+    if (!pid || !scroller.current) return;
+    const idx = ranked.findIndex((r) => r.post.id === pid);
+    if (idx >= 0) scroller.current.scrollTo({ top: idx * scroller.current.clientHeight, behavior: 'auto' });
+  }, [ranked]);
 
   const onScroll = () => {
     const el = scroller.current; if (!el) return;
@@ -38,7 +54,7 @@ export function Feed() {
     <div className="feed-wrap">
       <div className="feed" ref={scroller} onScroll={onScroll}>
         {ranked.map((rp, i) => (
-          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} />
+          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={comments[rp.post.id]?.length ?? 0} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} />
         ))}
       </div>
 
@@ -53,11 +69,13 @@ export function Feed() {
       <div className="counter">{idx + 1}/{ranked.length}</div>
 
       <WhySheet ranked={why} onClose={() => setWhy(null)} />
+      {commentFor && <CommentSheet comments={comments[commentFor.post.id] ?? []} onClose={() => setCommentFor(null)} onAdd={(t) => addComment(commentFor.post.id, t)} />}
+      {shareFor && <ShareSheet url={deeplink(shareFor.post.id)} onClose={() => setShareFor(null)} />}
     </div>
   );
 }
 
-function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, muted, onToggleMute }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; muted: boolean; onToggleMute: () => void }) {
+function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, onComment, onShare, commentCount, muted, onToggleMute }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; onComment: () => void; onShare: () => void; commentCount: number; muted: boolean; onToggleMute: () => void }) {
   const { post, factors } = rp;
   const active = Math.abs(index - activeIndex) <= 1;
   // only the active card can ever play sound; adjacent pre-mounted videos stay muted
@@ -89,8 +107,8 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
       <div className="rail">
         <button className="rail-btn vol-btn" onClick={onToggleMute}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>
         <button className="rail-btn" onClick={onLike}>{liked ? <IoHeart size={32} color="var(--brand2)" /> : <IoHeartOutline size={32} />}<span style={{ color: liked ? 'var(--brand2)' : 'var(--text)' }}>{fmtCount(post.likes + (liked ? 1 : 0))}</span></button>
-        <button className="rail-btn"><IoChatbubbleOutline size={32} /><span>{fmtCount(post.comments)}</span></button>
-        <button className="rail-btn"><IoArrowRedoOutline size={30} /><span>{fmtCount(post.shares)}</span></button>
+        <button className="rail-btn" onClick={onComment}><IoChatbubbleOutline size={32} /><span>{fmtCount(post.comments + commentCount)}</span></button>
+        <button className="rail-btn" onClick={onShare}><IoArrowRedoOutline size={30} /><span>{fmtCount(post.shares)}</span></button>
         <button className="rail-btn why-rail" onClick={onWhy}><IoHelpCircleOutline size={30} /><span>Why?</span></button>
       </div>
 
