@@ -20,6 +20,7 @@ export interface LiveItem {
   id: string; topic: string; type: 'video' | 'image' | 'text' | 'story';
   title: string; author: string; community: string;
   media?: string[]; permalink: string; likes: number; comments: number; ageHours: number;
+  embedUrl?: string; provider?: string; thumb?: string;
 }
 
 export async function fetchLiveFeed(topics: string[]): Promise<LiveItem[]> {
@@ -40,10 +41,11 @@ export function liveToPosts(items: LiveItem[]): { posts: Post[]; users: User[] }
     if (!uids.has(uid)) { uids.add(uid); users.push({ id: uid, name: it.author, handle: it.author.replace(/^(u\/|@)/, ''), followers: 0, verified: false, joinedDaysAgo: 0 }); }
     return {
       id: it.id, creatorId: uid, topic: it.topic as any,
-      kind: it.type === 'video' ? 'video' : it.type === 'text' ? 'text' : 'image',
+      kind: it.embedUrl ? 'video' : it.type === 'video' ? 'video' : it.type === 'text' ? 'text' : 'image',
       imageUrl: it.media?.[0], media: it.type === 'story' ? it.media : undefined,
       caption: it.title, likes: it.likes, comments: it.comments, shares: 0, ageHours: it.ageHours,
       permalink: it.permalink, community: it.community,
+      embedUrl: it.embedUrl, provider: it.provider, thumb: it.thumb,
     } as Post;
   });
   return { posts, users };

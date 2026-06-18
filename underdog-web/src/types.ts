@@ -20,6 +20,9 @@ export interface Post {
   tiktokUrl?: string;
   media?: string[]; // story = multiple images
   permalink?: string;
+  embedUrl?: string; // for embeddable providers (YouTube, etc.)
+  provider?: string;
+  thumb?: string;
   community?: string;
   bgFrom?: string;
   bgTo?: string;

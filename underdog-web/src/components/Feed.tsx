@@ -98,6 +98,8 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
     <section className="card" style={{ background: (post.kind === 'image' || post.kind === 'video' || post.kind === 'tiktok') ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
       {post.kind === 'tiktok' && post.tiktokUrl
         ? (active ? <TikTokEmbed url={post.tiktokUrl} /> : <div className="tiktok-placeholder"><span>▶ TikTok</span></div>)
+        : post.embedUrl
+        ? (active ? <iframe className="card-bg yt-embed" src={post.embedUrl + '?autoplay=1&mute=1&playsinline=1&rel=0'} title={post.caption} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen /> : <img className="card-bg" src={post.thumb} alt="" />)
         : post.media && post.media.length > 1
         ? <StoryView images={post.media} alt={post.caption} />
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
