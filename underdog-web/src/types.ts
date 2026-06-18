@@ -15,7 +15,7 @@ export interface Post {
   id: string;
   creatorId: string;
   topic: TopicId;
-  kind: 'image' | 'text' | 'tiktok';
+  kind: 'image' | 'text' | 'tiktok' | 'video';
   imageUrl?: string;
   tiktokUrl?: string;
   bgFrom?: string;

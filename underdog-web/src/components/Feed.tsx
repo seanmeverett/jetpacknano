@@ -72,12 +72,12 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
   };
 
   return (
-    <section className="card" style={{ background: post.kind === 'image' ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
+    <section className="card" style={{ background: (post.kind === 'image' || post.kind === 'video') ? undefined : `linear-gradient(${post.bgFrom}, ${post.bgTo})` }}>
       {post.kind === 'tiktok' && post.tiktokUrl
         ? (active ? <TikTokEmbed url={post.tiktokUrl} /> : <div className="tiktok-placeholder"><span>▶ TikTok</span></div>)
-        : post.kind === 'image' && post.imageUrl && (post.imageUrl.endsWith('.mp4')
-          ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted playsInline preload="metadata" />
-          : <img src={post.imageUrl} alt="" className="card-bg" />)}
+        : post.imageUrl && post.imageUrl.endsWith('.mp4')
+        ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
+        : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : null}
       <div className="tap-layer" onClick={tapBg} />
       <div className="grad-top" />
       <div className="grad-bottom" />
@@ -115,9 +115,9 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         </div>
         <p className="caption">{post.caption}</p>
         <button className="why-link" onClick={onWhy}><IoSparkles size={13} color="var(--accent)" /> Why am I seeing this?</button>
-        {post.kind === 'image' && (() => { const c = POST_CREDIT[post.id] || JPG_CREDIT[post.id]; return c ? (
+        {(post.kind === 'image' || post.kind === 'video') && (() => { const c = POST_CREDIT[post.id] || JPG_CREDIT[post.id]; return c ? (
           <a className="photo-credit" href={c.source} target="_blank" rel="noreferrer">Photo: {c.credit} &middot; {c.license}</a>
-        ) : null; })()}
+        ) : (post.kind === 'video' ? <a className="photo-credit" href="https://www.pexels.com" target="_blank" rel="noreferrer">Clip: Pexels &middot; Free License</a> : null); })()}
       </div>
     </section>
   );

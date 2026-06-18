@@ -30,3 +30,6 @@ scripts/**/*.js
 # Supabase / local env
 .env
 .env.*
+
+# Content media lives in Supabase Storage, not the repo
+public/posts/
