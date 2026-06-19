@@ -101,11 +101,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []); // run once on mount only
 
   // Instant load from localStorage cache (returning users see content immediately)
+  // Cache version invalidates old caches when feed sources change; TTL=5min for freshness
   useEffect(() => {
     if (!saved.onboardingDone) return;
     try {
       const cached = JSON.parse(localStorage.getItem('jetpacknano_feed_cache') || 'null');
-      if (cached && cached.posts?.length && Date.now() - cached.ts < 30 * 60 * 1000) {
+      if (cached && cached.v === 2 && cached.posts?.length && Date.now() - cached.ts < 5 * 60 * 1000) {
         setPosts(cached.posts);
         setUsersMap((m) => { const n = { ...m }; for (const u of cached.users || []) n[u.id] = u; return n; });
       }
@@ -114,11 +115,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { let live = true; loadComments().then((m) => { if (live) setSeedComments(m); }).catch(() => {}); return () => { live = false; }; }, []);
   useEffect(() => { let live = true; loadUsers().then((m) => { if (live) setUsersMap(m); }).catch(() => {}); return () => { live = false; }; }, []);
 
-  // Cache feed to localStorage for instant return-visit load
+  // Cache feed to localStorage for instant return-visit load (v2 = X+YouTube+Mastodon era)
   useEffect(() => {
     if (posts.length > 0) {
       const users = Object.values(usersMap);
-      try { localStorage.setItem('jetpacknano_feed_cache', JSON.stringify({ posts, users, ts: Date.now() })); } catch {}
+      try { localStorage.setItem('jetpacknano_feed_cache', JSON.stringify({ posts, users, ts: Date.now(), v: 2 })); } catch {}
     }
   }, [posts, usersMap]);
 
