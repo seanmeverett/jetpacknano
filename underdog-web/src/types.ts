@@ -58,4 +58,6 @@ export interface RankedPost {
 
 export interface ViewerPrefs {
   interests: Record<string, number>; // weight 0..1 (supports custom topics)
+  lang: string;   // ISO 639-1 code: en, es, fr, de, ja, ...
+  region: string; // ISO 3166-1 code: US, GB, DE, JP, ...
 }

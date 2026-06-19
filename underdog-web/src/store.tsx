@@ -36,9 +36,11 @@ interface AppState {
   seedComments: Record<string, Comment[]>;
   screen: 'onboarding' | 'feed' | 'settings';
   setScreen: (s: AppState['screen']) => void;
-  finishOnboarding: (interests: TopicId[]) => void;
+  finishOnboarding: (interests: TopicId[], lang?: string, region?: string) => void;
   toggleInterest: (t: TopicId, on: boolean) => void;
   setInterestWeight: (t: TopicId, w: number) => void;
+  setLang: (lang: string) => void;
+  setRegion: (region: string) => void;
   setMode: (m: FeedMode) => void;
   setInverseStrength: (v: number) => void;
   toggleDiversity: (on: boolean) => void;
@@ -46,7 +48,7 @@ interface AppState {
   toggleLike: (postId: string) => void;
   toggleFollow: (creatorId: string) => void;
   addComment: (postId: string, text: string) => void;
-  prefetchFeed: (topics: string[]) => void;
+  prefetchFeed: (topics: string[], lang?: string, region?: string) => void;
   addTopic: (topic: string) => void;
   removeTopic: (topic: string) => void;
   topicOrder: string[];
@@ -74,12 +76,11 @@ const loadPersisted = (): Partial<Persisted> => getCookie<Partial<Persisted>>(CO
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const saved = loadPersisted();
-  const [onboardingDone, setOnboardingDone] = useState<boolean>(saved.onboardingDone ?? false);
-  const [screen, setScreen] = useState<'onboarding' | 'feed' | 'settings'>(
-    saved.onboardingDone ? 'feed' : 'onboarding'
-  );
+  // Onboarding always shows on refresh — user picks topics/lang/region each visit
+  const [onboardingDone, setOnboardingDone] = useState<boolean>(false);
+  const [screen, setScreen] = useState<'onboarding' | 'feed' | 'settings'>('onboarding');
   const [prefs, setPrefs] = useState<ViewerPrefs>(
-    saved.prefs ?? { interests: emptyInterests() }
+    saved.prefs ?? { interests: emptyInterests(), lang: 'en', region: 'US' }
   );
   const [opts, setOpts] = useState<RankOptions>(saved.opts ?? defaultOpts);
   const [liked, setLiked] = useState<Record<string, boolean>>(saved.liked ?? {});
@@ -95,7 +96,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (onboardingDone) {
       const interests = (saved.topicOrder ?? []).filter((t) => (prefs.interests[t] ?? 0) > 0);
-      if (interests.length) refreshLive(interests);
+      if (interests.length) refreshLive(interests, saved.prefs?.lang ?? 'en', saved.prefs?.region ?? 'US');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once on mount only
@@ -125,20 +126,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Persist the meaningful state to a cookie whenever it changes.
   useEffect(() => {
-    setCookie(COOKIE, { onboardingDone, prefs, opts, liked, followed, comments, topicOrder });
+    setCookie(COOKIE, { prefs, opts, liked, followed, comments, topicOrder });
   }, [onboardingDone, prefs, opts, liked, followed, comments, topicOrder]);
 
 
-  const prefetchFeed = useCallback((topics: string[]) => {
-    fetchLiveFeed(topics).then((items) => {
+  const prefetchFeed = useCallback((topics: string[], lang = 'en', region = 'US') => {
+    fetchLiveFeed(topics, lang, region).then((items) => {
       if (!items.length) return;
       const { posts: lp, users: lu } = liveToPosts(items);
       setPrefetched({ posts: lp, users: lu });
     }).catch(() => {});
   }, []);
 
-  const refreshLive = useCallback((topics: string[]) => {
-    fetchLiveFeed(topics).then((items) => {
+  const refreshLive = useCallback((topics: string[], lang = 'en', region = 'US') => {
+    fetchLiveFeed(topics, lang, region).then((items) => {
       if (!items.length) return;
       const { posts: lp, users: lu } = liveToPosts(items);
       setPosts(lp);
@@ -146,9 +147,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {});
   }, []);
 
-  const finishOnboarding = useCallback((interests: TopicId[]) => {
+  const finishOnboarding = useCallback((interests: TopicId[], lang = 'en', region = 'US') => {
     setPrefs({
       interests: { ...emptyInterests(), ...Object.fromEntries(interests.map((t) => [t, 1])) } as ViewerPrefs['interests'],
+      lang, region,
     });
     setOnboardingDone(true);
     setScreen('feed');
@@ -159,15 +161,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUsersMap((m) => { const n = { ...m }; for (const u of prefetched.users) n[u.id] = u; return n; });
     }
     // Always refresh in background for fresh content
-    refreshLive(interests as unknown as string[]);
+    refreshLive(interests as unknown as string[], lang, region);
   }, [refreshLive, prefetched]);
 
   const toggleInterest = useCallback((t: TopicId, on: boolean) => {
-    setPrefs((p) => ({ interests: { ...p.interests, [t]: on ? 1 : 0 } as ViewerPrefs['interests'] }));
+    setPrefs((p) => ({ ...p, interests: { ...p.interests, [t]: on ? 1 : 0 } as ViewerPrefs['interests'] }));
   }, []);
   const setInterestWeight = useCallback((t: TopicId, w: number) => {
-    setPrefs((p) => ({ interests: { ...p.interests, [t]: w } as ViewerPrefs['interests'] }));
+    setPrefs((p) => ({ ...p, interests: { ...p.interests, [t]: w } as ViewerPrefs['interests'] }));
   }, []);
+  const setLang = useCallback((lang: string) => setPrefs((p) => ({ ...p, lang })), []);
+  const setRegion = useCallback((region: string) => setPrefs((p) => ({ ...p, region })), []);
 
   const setMode = useCallback((m: FeedMode) => setOpts((o) => ({ ...o, mode: m })), []);
   const setInverseStrength = useCallback((v: number) => setOpts((o) => ({ ...o, inverseStrength: v })), []);
@@ -187,24 +191,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (screen !== 'feed' || !onboardingDone) return;
     const interests = topicOrder.filter((t) => (prefs.interests[t] ?? 0) > 0);
     if (!interests.length) return;
-    const id = setInterval(() => refreshLive(interests), 120000);
+    const id = setInterval(() => refreshLive(interests, prefs.lang || 'en', prefs.region || 'US'), 120000);
     return () => clearInterval(id);
   }, [screen, onboardingDone, prefs.interests, refreshLive]);
 
   const addTopic = useCallback((topic: string) => {
     const t = topic.trim().toLowerCase();
     if (!t) return;
-    setPrefs((p) => ({ interests: { ...p.interests, [t]: 1 } }));
+    setPrefs((p) => ({ ...p, interests: { ...p.interests, [t]: 1 } }));
     setTopicOrder((o) => o.includes(t) ? o : [...o, t]);
     const allTopics = [...topicOrder.filter((x) => x !== t), t].filter((x) => (prefs.interests[x] ?? 1) > 0);
     refreshLive(allTopics);
   }, [prefs.interests, topicOrder, refreshLive]);
 
   const removeTopic = useCallback((topic: string) => {
-    setPrefs((p) => ({ interests: { ...p.interests, [topic]: 0 } }));
+    setPrefs((p) => ({ ...p, interests: { ...p.interests, [topic]: 0 } }));
     setTopicOrder((o) => o.filter((x) => x !== topic));
     const allTopics = topicOrder.filter((x) => x !== topic && (prefs.interests[x] ?? 0) > 0);
-    if (allTopics.length > 0) refreshLive(allTopics); else setPosts([]);
+    if (allTopics.length > 0) refreshLive(allTopics, prefs.lang || 'en', prefs.region || 'US'); else setPosts([]);
   }, [prefs.interests, topicOrder, refreshLive, setPosts]);
 
   const renameTopic = useCallback((oldName: string, newName: string) => {
@@ -214,18 +218,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const interests = { ...p.interests };
       interests[oldName] = 0;
       interests[n] = 1;
-      return { interests };
+      return { ...p, interests };
     });
     setTopicOrder((o) => o.map((t) => (t === oldName ? n : t)));
     const active = topicOrder.map((t) => (t === oldName ? n : t))
-    refreshLive(active);
-  }, [topicOrder, refreshLive]);
+    refreshLive(active, prefs.lang || "en", prefs.region || "US");
+  }, [topicOrder, refreshLive, prefs.lang, prefs.region]);
 
   const reorderTopics = useCallback((newOrder: string[]) => {
     setTopicOrder(newOrder);
     const active = newOrder.filter((t) => (prefs.interests[t] ?? 0) > 0);
-    if (active.length > 0) refreshLive(active);
-  }, [prefs.interests, refreshLive]);
+    if (active.length > 0) refreshLive(active, prefs.lang || 'en', prefs.region || 'US');
+  }, [prefs.interests, refreshLive, prefs.lang, prefs.region]);
 
   const addComment = useCallback((postId: string, text: string) => {
     const clean = text.trim().slice(0, 280);
@@ -238,7 +242,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFollowed({});
     setComments({});
     setTopicOrder([]);
-    setPrefs({ interests: emptyInterests() });
+    setPrefs({ interests: emptyInterests(), lang: 'en', region: 'US' });
     setOpts(defaultOpts);
     setOnboardingDone(false);
     setScreen('onboarding');
@@ -248,11 +252,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AppState>(
     () => ({
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
-      setScreen, finishOnboarding, toggleInterest, setInterestWeight,
+      setScreen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
       toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, reorderTopics, renameTopic, prefetchFeed, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

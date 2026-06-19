@@ -6,6 +6,8 @@ import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline, IoClose, IoCheckmarkCi
 export function Onboarding() {
   const { finishOnboarding, prefetchFeed } = useApp();
   const [picked, setPicked] = useState<string[]>([]);
+  const [lang, setLang] = useState('en');
+  const [region, setRegion] = useState('US');
   const [customInput, setCustomInput] = useState('');
   const [editingTopic, setEditingTopic] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -44,7 +46,7 @@ export function Onboarding() {
   const customTopics = picked.filter((t) => !TOPICS.some((tp) => tp.id === t));
 
   useEffect(() => {
-    if (picked.length >= 3) prefetchFeed(picked);
+    if (picked.length >= 3) prefetchFeed(picked, lang, region);
   }, [picked.length, prefetchFeed]);
 
   return (
@@ -112,7 +114,38 @@ export function Onboarding() {
           </div>
         )}
 
-        <button className={`primary-btn ${ready ? '' : 'disabled'}`} disabled={!ready} onClick={() => finishOnboarding(picked as any)}>
+        <div className="section-label">Language &amp; region</div>
+        <div className="lang-region-row">
+          <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value)}>
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="pt">Portuguese</option>
+            <option value="it">Italian</option>
+            <option value="hi">Hindi</option>
+            <option value="ar">Arabic</option>
+          </select>
+          <select className="region-select" value={region} onChange={(e) => setRegion(e.target.value)}>
+            <option value="US">United States</option>
+            <option value="GB">United Kingdom</option>
+            <option value="CA">Canada</option>
+            <option value="DE">Germany</option>
+            <option value="FR">France</option>
+            <option value="JP">Japan</option>
+            <option value="KR">South Korea</option>
+            <option value="IN">India</option>
+            <option value="BR">Brazil</option>
+            <option value="AU">Australia</option>
+            <option value="ES">Spain</option>
+            <option value="IT">Italy</option>
+            <option value="MX">Mexico</option>
+          </select>
+        </div>
+
+        <button className={`primary-btn ${ready ? '' : 'disabled'}`} disabled={!ready} onClick={() => finishOnboarding(picked as any, lang, region)}>
           {ready ? 'Enter the feed' : `Pick ${3 - picked.length} more`}
           <IoArrowForwardOutline size={18} />
         </button>

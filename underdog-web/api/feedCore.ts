@@ -80,20 +80,20 @@ const Q: Record<string, { m: string[]; y: string[] }> = {
   'machine learning': { m: ['machinelearning'], y: ['machine learning', 'ML tutorial'] },
 };
 
-const isEnglish = (s: any): boolean => {
-  const lang = s.language;
-  if (lang && lang !== 'en') return false;
+const isEnglish = (s: any, lang = 'en'): boolean => {
+  const l = s.language;
+  if (l && l !== lang && !l.startsWith(lang + '-')) return false;
   const text = (s.content || '').replace(/<[^>]+>/g, '');
   const nonAscii = (text.match(/[^\x00-\x7F]/g) || []).length;
   return nonAscii / Math.max(1, text.length) < 0.3;
 };
 
-async function mastodonTag(tag: string, topic: string): Promise<Item[]> {
+async function mastodonTag(tag: string, topic: string, lang = 'en'): Promise<Item[]> {
   try {
     const r = await fetch(`https://mastodon.social/api/v1/timelines/tag/${encodeURIComponent(tag)}?limit=30`, { headers: { 'User-Agent': UA } });
     if (!r.ok) return [];
     const statuses = (await r.json()) as any[];
-    return statuses.filter(isEnglish).map((s) => {
+    return statuses.filter((s) => isEnglish(s, lang)).map((s) => {
       const media: string[] = []; let type: Item['type'] = 'text'; let format = 'text'; let audio: string | undefined;
       for (const m of s.media_attachments ?? []) {
         if (!m?.url) continue;
@@ -130,10 +130,10 @@ const parseDuration = (iso: string): number => {
 };
 
 // Official YouTube Data API v3 — trending (viewCount), English-only, 7-day window
-async function youtubeOfficial(q: string, topic: string, apiKey: string): Promise<Item[]> {
+async function youtubeOfficial(q: string, topic: string, apiKey: string, lang = 'en', region = 'US'): Promise<Item[]> {
   try {
     const publishedAfter = new Date(Date.now() - 7 * 86400000).toISOString();
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=relevance&maxResults=25&relevanceLanguage=en&regionCode=US&publishedAfter=${publishedAfter}&key=${apiKey}`;
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=relevance&maxResults=25&relevanceLanguage=${lang}&regionCode=${region}&publishedAfter=${publishedAfter}&key=${apiKey}`;
     const sr = await fetch(searchUrl, { headers: { 'Referer': REFERER } });
     if (!sr.ok) return [];
     const sj: any = await sr.json();
@@ -153,8 +153,8 @@ async function youtubeOfficial(q: string, topic: string, apiKey: string): Promis
       const ds = det.snippet || {};
       const audioLang = ds.defaultAudioLanguage;
       const vidLang = ds.defaultLanguage;
-      if (audioLang && !audioLang.startsWith('en')) return null;
-      if (vidLang && !vidLang.startsWith('en')) return null;
+      if (audioLang && !audioLang.startsWith(lang)) return null;
+      if (vidLang && !vidLang.startsWith(lang)) return null;
       const title = ds.title || v.snippet?.title || '';
       if (hasNonLatinScript(title)) return null;
 
@@ -194,9 +194,9 @@ async function youtubePiped(q: string, topic: string): Promise<Item[]> {
   return [];
 }
 
-async function youtubeQuery(q: string, topic: string, apiKey?: string): Promise<Item[]> {
+async function youtubeQuery(q: string, topic: string, apiKey?: string, lang = 'en', region = 'US'): Promise<Item[]> {
   if (apiKey) {
-    const official = await youtubeOfficial(q, topic, apiKey);
+    const official = await youtubeOfficial(q, topic, apiKey, lang, region);
     if (official.length) return official;
   }
   return youtubePiped(q, topic);
@@ -221,7 +221,7 @@ async function getGuestToken(): Promise<string | null> {
   } catch { return null; }
 }
 
-async function xUserTweets(userId: string, screenName: string, topic: string): Promise<Item[]> {
+async function xUserTweets(userId: string, screenName: string, topic: string, lang = 'en'): Promise<Item[]> {
   const gt = await getGuestToken();
   if (!gt) return [];
   try {
@@ -252,10 +252,10 @@ async function xUserTweets(userId: string, screenName: string, topic: string): P
       if (!leg) continue;
       // Skip retweets — only original content
       if (leg.full_text?.startsWith('RT @')) continue;
-      if (leg.lang && leg.lang !== 'en') continue;
+      if (leg.lang && leg.lang !== lang) continue;
 
       const text = (leg.full_text || '').replace(/https?:\/\/t\.co\/\S+/g, '').trim();
-      if (!text || hasNonLatinScript(text)) continue;
+      if (!text || (lang === 'en' && hasNonLatinScript(text))) continue;
 
       const media: string[] = []; let type: Item['type'] = 'text'; let format = 'text';
       let thumb: string | undefined;
@@ -289,13 +289,13 @@ async function xUserTweets(userId: string, screenName: string, topic: string): P
   } catch { return []; }
 }
 
-async function xTopicTweets(topic: string): Promise<Item[]> {
+async function xTopicTweets(topic: string, lang = 'en'): Promise<Item[]> {
   const accounts = X_ACCOUNTS[topic];
   if (!accounts?.length) return [];
   // Fetch from up to 4 accounts in parallel (balance speed vs rate limits)
   const batch = accounts.slice(0, 4);
   const results = await Promise.allSettled(
-    batch.map((a) => xUserTweets(a.id, a.s, topic))
+    batch.map((a) => xUserTweets(a.id, a.s, topic, lang))
   );
   const seen = new Set<string>();
   const items: Item[] = [];
@@ -318,13 +318,13 @@ function interleaveByFormat(items: Item[]): Item[] {
   return result;
 }
 
-export async function buildFeed(topics: string[], youtubeApiKey?: string) {
+export async function buildFeed(topics: string[], youtubeApiKey?: string, lang = 'en', region = 'US') {
   const tasks: Promise<Item[]>[] = [];
   for (const topic of topics) {
     const q = Q[topic] ?? { m: [topic], y: [topic] };
-    q.m.forEach((tag) => tasks.push(mastodonTag(tag, topic)));
-    q.y.forEach((y) => tasks.push(youtubeQuery(y, topic, youtubeApiKey)));
-    tasks.push(xTopicTweets(topic)); // X/Twitter curated accounts
+    q.m.forEach((tag) => tasks.push(mastodonTag(tag, topic, lang)));
+    q.y.forEach((y) => tasks.push(youtubeQuery(y, topic, youtubeApiKey, lang, region)));
+    tasks.push(xTopicTweets(topic, lang)); // X/Twitter curated accounts
   }
   const results = await Promise.allSettled(tasks);
   const seen = new Set<string>(); const items: Item[] = [];

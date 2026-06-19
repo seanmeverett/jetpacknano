@@ -15,9 +15,10 @@ export interface LiveItem {
   embedUrl?: string; provider?: string; thumb?: string;
 }
 
-export async function fetchLiveFeed(topics: string[]): Promise<LiveItem[]> {
+export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US'): Promise<LiveItem[]> {
   try {
-    const r = await fetch('/api/feed?topics=' + encodeURIComponent(topics.join(',')));
+    const params = new URLSearchParams({ topics: topics.join(','), lang, region });
+    const r = await fetch('/api/feed?' + params.toString());
     if (!r.ok) return [];
     const j = await r.json();
     return (j.items || []) as LiveItem[];
