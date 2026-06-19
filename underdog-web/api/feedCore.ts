@@ -58,6 +58,22 @@ async function mastodonTag(tag: string, topic: string): Promise<Item[]> {
   } catch { return []; }
 }
 
+// Detect non-Latin script chars (Cyrillic, Arabic, Devanagari, CJK, Thai, Hebrew, Indic).
+// Emoji (U+1F000+) and dingbats (U+2600-27BF) are excluded — they don't indicate non-English.
+const hasNonLatinScript = (s: string): boolean => {
+  for (const ch of s) {
+    const cp = ch.codePointAt(0)!;
+    if (cp >= 0x1F000 || (cp >= 0x2600 && cp <= 0x27BF)) continue; // emoji/dingbats
+    if (cp >= 0x0400 && cp <= 0x04FF) return true;  // Cyrillic
+    if (cp >= 0x0590 && cp <= 0x05FF) return true;  // Hebrew
+    if (cp >= 0x0600 && cp <= 0x06FF) return true;  // Arabic
+    if (cp >= 0x0900 && cp <= 0x0DFF) return true;  // Devanagari, Bengali, Tamil, Telugu, etc.
+    if (cp >= 0x0E00 && cp <= 0x0E7F) return true;  // Thai
+    if (cp >= 0x4E00 && cp <= 0x9FFF) return true;  // CJK
+  }
+  return false;
+};
+
 // Parse ISO 8601 duration (e.g. "PT1M30S" → 90)
 const parseDuration = (iso: string): number => {
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -65,46 +81,51 @@ const parseDuration = (iso: string): number => {
   return (parseInt(m[1] || '0') * 3600) + (parseInt(m[2] || '0') * 60) + parseInt(m[3] || '0');
 };
 
-// Official YouTube Data API v3
+// Official YouTube Data API v3 — English-only, recent (14-day window), relevance-ranked
 async function youtubeOfficial(q: string, topic: string, apiKey: string): Promise<Item[]> {
   try {
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=date&maxResults=15&relevanceLanguage=en&regionCode=US&key=${apiKey}`;
+    const publishedAfter = new Date(Date.now() - 14 * 86400000).toISOString();
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=relevance&maxResults=25&relevanceLanguage=en&regionCode=US&publishedAfter=${publishedAfter}&key=${apiKey}`;
     const sr = await fetch(searchUrl, { headers: { 'Referer': REFERER } });
     if (!sr.ok) return [];
     const sj: any = await sr.json();
     const videoIds = (sj.items || []).map((v: any) => v.id?.videoId).filter(Boolean);
     if (!videoIds.length) return [];
 
-    // Get video details (duration, stats)
+    // Get video details — duration, stats, AND language fields (search endpoint omits these)
     const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics,snippet&id=${videoIds.join(',')}&key=${apiKey}`;
     const dr = await fetch(detailsUrl, { headers: { 'Referer': REFERER } });
     const dj: any = dr.ok ? await dr.json() : { items: [] };
     const detailsMap: Record<string, any> = {};
     for (const v of dj.items || []) detailsMap[v.id] = v;
 
-    return (sj.items || []).filter((v: any) => {
-      // English-only filter: check defaultLanguage/defaultAudioLanguage + title non-ASCII
-      const lang = v.snippet?.defaultLanguage || v.snippet?.defaultAudioLanguage;
-      if (lang && lang !== 'en' && !lang.startsWith('en-')) return false;
-      const title = v.snippet?.title || '';
-      const nonAscii = (title.match(/[^\x00-\x7F]/g) || []).length;
-      if (nonAscii / Math.max(1, title.length) > 0.2) return false;
-      return true;
-    }).map((v: any) => {
+    return (sj.items || []).map((v: any) => {
       const vid = v.id?.videoId;
       if (!vid) return null;
       const det = detailsMap[vid] || {};
+      const ds = det.snippet || {};
+
+      // English-only filter using details endpoint (search snippet has no language fields)
+      const audioLang = ds.defaultAudioLanguage;
+      const vidLang = ds.defaultLanguage;
+      if (audioLang && !audioLang.startsWith('en')) return null;  // audio language is the strongest signal
+      if (vidLang && !vidLang.startsWith('en')) return null;
+      const title = ds.title || v.snippet?.title || '';
+      if (hasNonLatinScript(title)) return null;  // catches Cyrillic/Arabic/Devanagari/CJK/Thai/Hebrew
+
       const dur = det.contentDetails?.duration ? parseDuration(det.contentDetails.duration) : undefined;
       const views = parseInt(det.statistics?.viewCount || '0');
       const format = dur != null ? (dur <= 60 ? 'short video' : 'long video') : 'video';
+      const publishedAt = ds.publishedAt || v.snippet?.publishedAt;
       return {
         id: 'yt_' + vid, topic, type: 'video' as const, format,
-        title: (det.snippet?.title || v.snippet?.title || '(untitled)'),
-        author: det.snippet?.channelTitle || v.snippet?.channelTitle || 'YouTube',
+        title: title || '(untitled)',
+        author: ds.channelTitle || v.snippet?.channelTitle || 'YouTube',
         community: 'youtube.com', permalink: 'https://www.youtube.com/watch?v=' + vid,
-        likes: views, comments: parseInt(det.statistics?.commentCount || '0'), ageHours: v.snippet?.publishedAt ? Math.max(0, (Date.now() - new Date(v.snippet.publishedAt).getTime()) / 3600000) : 0,
+        likes: views, comments: parseInt(det.statistics?.commentCount || '0'),
+        ageHours: publishedAt ? Math.max(0, (Date.now() - new Date(publishedAt).getTime()) / 3600000) : 0,
         duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube',
-        thumb: (det.snippet?.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`),
+        thumb: (ds.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`),
       };
     }).filter(Boolean);
   } catch { return []; }
