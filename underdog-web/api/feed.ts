@@ -8,5 +8,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const topics = String(req.query.topics || '').split(',').map((t) => t.trim()).filter(Boolean);
   if (!topics.length) return res.json({ items: [], sources: [], count: 0 });
-  res.json(await buildFeed(topics));
+  res.json(await buildFeed(topics, process.env.YOUTUBE_API_KEY));
 }

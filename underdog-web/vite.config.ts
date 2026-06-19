@@ -14,7 +14,7 @@ export default defineConfig({
           const u = new URL(req.url || '', 'http://x');
           const topics = (u.searchParams.get('topics') || '').split(',').map((t) => t.trim()).filter(Boolean);
           if (!topics.length) { res.end(JSON.stringify({ items: [], sources: [], count: 0 })); return; }
-          try { res.end(JSON.stringify(await buildFeed(topics))); }
+          try { res.end(JSON.stringify(await buildFeed(topics, process.env.YOUTUBE_API_KEY))); }
           catch { res.end(JSON.stringify({ items: [], sources: [], count: 0 })); }
         });
       },
