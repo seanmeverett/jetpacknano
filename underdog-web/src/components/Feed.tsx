@@ -131,7 +131,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
         ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted={cardMuted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
         : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : <div className="text-center"><p className="text-body"><LinkText text={post.caption} /></p></div>}
-      <div className="tap-layer" onClick={tapBg} />
+      {(post.imageUrl || post.media || post.embedUrl || post.audio || post.tiktokUrl) && <div className="tap-layer" onClick={tapBg} />}
       <div className="grad-top" />
       <div className="media-badge">{(() => { const fi = formatInfo(post); return <><fi.Icon size={14} /> <span>{fi.fmt}</span></>; })()}</div>
       <div className="grad-bottom" />
