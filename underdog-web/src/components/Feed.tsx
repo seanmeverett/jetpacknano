@@ -103,7 +103,7 @@ const formatInfo = (post: any) => {
   const Icon = FORMAT_ICONS[fmt] || IoTextOutline;
   return { fmt, Icon };
 };
-const hasControllableAudio = (post: any) => !!(post.audio) || !!(post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl) && !post.embedUrl);
+const hasControllableAudio = (post: any) => !!(post.audio) || !!(post.embedUrl) || !!(post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl));
 
 function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, onComment, onShare, commentCount, muted, onToggleMute }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; onComment: () => void; onShare: () => void; commentCount: number; muted: boolean; onToggleMute: () => void }) {
   const { post, factors } = rp;
@@ -115,6 +115,14 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
   const freshFace = creator.followers < 100;
   const lastTap = useRef(0);
   const [burst, setBurst] = useState(false);
+  const ytRef = useRef<HTMLIFrameElement>(null);
+
+  // Control YouTube iframe mute via postMessage (no reload needed)
+  useEffect(() => {
+    if (!ytRef.current || !post.embedUrl) return;
+    const cmd = cardMuted ? 'mute' : 'unMute';
+    ytRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: cmd, args: '' }), '*');
+  }, [cardMuted, post.embedUrl]);
 
   const tapBg = () => {
     const now = Date.now();
@@ -127,7 +135,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
       {post.kind === 'tiktok' && post.tiktokUrl
         ? (active ? <TikTokEmbed url={post.tiktokUrl} /> : <div className="tiktok-placeholder"><span>▶ TikTok</span></div>)
         : post.embedUrl
-        ? (active ? <iframe className="card-bg yt-embed" src={post.embedUrl + '?autoplay=1&mute=1&playsinline=1&rel=0'} title={post.caption} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen /> : <img className="card-bg" src={post.thumb} alt="" />)
+        ? (active ? <iframe ref={ytRef} className="card-bg yt-embed" src={post.embedUrl + '?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0'} title={post.caption} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen /> : <img className="card-bg" src={post.thumb} alt="" />)
         : post.audio
         ? <div className="audio-card"><IoMusicalNotesOutline size={48} color="var(--brand)" /><span className="audio-label">Audio post</span><audio src={post.audio} autoPlay loop muted={cardMuted} playsInline /></div>
         : post.media && post.media.length > 1
