@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../store';
 import { TOPICS } from '../seed';
-import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline, IoClose, IoCreateOutline } from '../icons';
+import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline, IoClose, IoCheckmarkCircle } from '../icons';
 
 export function Onboarding() {
   const { finishOnboarding, prefetchFeed } = useApp();
@@ -86,23 +86,25 @@ export function Onboarding() {
             {customTopics.map((t) => (
               <div key={t} className="custom-chip-wrapper">
                 {editingTopic === t ? (
-                  <input
-                    ref={editRef}
-                    className="custom-chip-edit"
-                    value={editValue}
-                    maxLength={40}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveEdit();
-                      if (e.key === 'Escape') cancelEdit();
-                    }}
-                    onBlur={saveEdit}
-                  />
+                  <div className="custom-chip-editing">
+                    <input
+                      ref={editRef}
+                      className="custom-chip-edit-input"
+                      value={editValue}
+                      maxLength={40}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit();
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                    />
+                    <button className="chip-submit-btn" onClick={saveEdit}><IoCheckmarkCircle size={18} color="var(--brand)" /></button>
+                    <button className="chip-remove-btn" onClick={() => { cancelEdit(); removeCustom(t); }}><IoClose size={14} color="var(--faint)" /></button>
+                  </div>
                 ) : (
-                  <div className="chip on custom-chip">
-                    <button className="chip-edit-btn" onClick={() => startEdit(t)}><IoCreateOutline size={13} color="var(--brand)" /></button>
+                  <div className="chip on custom-chip" onClick={() => startEdit(t)}>
                     <span>#{t}</span>
-                    <button className="chip-remove-btn" onClick={() => removeCustom(t)}><IoClose size={14} color="var(--brand)" /></button>
+                    <button className="chip-remove-btn" onClick={(e) => { e.stopPropagation(); removeCustom(t); }}><IoClose size={14} color="var(--brand)" /></button>
                   </div>
                 )}
               </div>
