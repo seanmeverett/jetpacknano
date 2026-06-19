@@ -107,7 +107,11 @@ export async function buildFeed(topics: string[]) {
   const results = await Promise.allSettled(tasks);
   const seen = new Set<string>(); const items: Item[] = [];
   for (const r of results) { if (r.status === 'fulfilled') for (const it of r.value) if (!seen.has(it.id)) { seen.add(it.id); items.push(it); } }
+  // Cap text-only posts to top 15 by engagement — keep the feed media-rich, not text-dominated
+  const textItems = items.filter((it) => it.format === 'text').sort((a, b) => engagementScore(b) - engagementScore(a)).slice(0, 15);
+  const mediaItems = items.filter((it) => it.format !== 'text');
+  const capped = [...mediaItems, ...textItems];
   // healthy mix: interleave by format, ranked by engagement within each format
-  const mixed = interleaveByFormat(items);
+  const mixed = interleaveByFormat(capped);
   return { items: mixed, count: mixed.length };
 }
