@@ -1,29 +1,49 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useApp } from '../store';
 import { TOPICS } from '../seed';
-import { TOPIC_ICONS, IoClose, IoAddOutline, IoReorderThreeOutline } from '../icons';
+import { TOPIC_ICONS, IoClose, IoAddOutline, IoCheckmarkCircle, IoReorderThreeOutline } from '../icons';
 
-function SortableTopic({ id, onRemove }: { id: string; onRemove: () => void }) {
+function SortableTopic({ id, onRemove, onRename }: { id: string; onRemove: () => void; onRename: (oldId: string, newId: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const topic = TOPICS.find((t) => t.id === id);
   const Icon = topic ? TOPIC_ICONS[topic.id] : null;
   const label = topic ? topic.label : id;
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const [editing, setEditing] = useState(false);
+  const [editVal, setEditVal] = useState(id);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const save = () => {
+    const v = editVal.trim().toLowerCase();
+    if (v && v !== id) onRename(id, v);
+    setEditing(false);
+  };
+
   return (
     <div ref={setNodeRef} style={style} className="sortable-topic">
       <button className="drag-handle" {...attributes} {...listeners}><IoReorderThreeOutline size={18} color="var(--faint)" /></button>
       {Icon && <Icon size={16} color="var(--brand)" />}
-      <span className="sortable-topic-label">{label}</span>
+      {editing ? (
+        <div className="sortable-topic-edit">
+          <input ref={inputRef} className="custom-chip-edit-input" value={editVal} maxLength={40}
+            onChange={(e) => setEditVal(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+            onBlur={save} />
+          <button className="chip-submit-btn" onClick={save}><IoCheckmarkCircle size={18} color="var(--brand)" /></button>
+        </div>
+      ) : (
+        <span className="sortable-topic-label" onClick={() => { setEditing(true); setEditVal(id); setTimeout(() => inputRef.current?.focus(), 50); }}>{label}</span>
+      )}
       <button className="topic-remove" onClick={onRemove}><IoClose size={16} color="var(--faint)" /></button>
     </div>
   );
 }
 
 export function TopicsSheet({ onClose }: { onClose: () => void }) {
-  const { prefs, topicOrder, addTopic, removeTopic, reorderTopics } = useApp();
+  const { prefs, topicOrder, addTopic, removeTopic, reorderTopics, renameTopic } = useApp();
   const [input, setInput] = useState('');
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -61,7 +81,7 @@ export function TopicsSheet({ onClose }: { onClose: () => void }) {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
               <SortableContext items={activeOrdered} strategy={verticalListSortingStrategy}>
                 {activeOrdered.map((t) => (
-                  <SortableTopic key={t} id={t} onRemove={() => removeTopic(t)} />
+                  <SortableTopic key={t} id={t} onRemove={() => removeTopic(t)} onRename={renameTopic} />
                 ))}
               </SortableContext>
             </DndContext>

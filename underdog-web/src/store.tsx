@@ -51,6 +51,7 @@ interface AppState {
   removeTopic: (topic: string) => void;
   topicOrder: string[];
   reorderTopics: (newOrder: string[]) => void;
+  renameTopic: (oldName: string, newName: string) => void;
   reset: () => void;
 }
 
@@ -205,6 +206,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (allTopics.length > 0) refreshLive(allTopics); else setPosts([]);
   }, [prefs.interests, topicOrder, refreshLive, setPosts]);
 
+  const renameTopic = useCallback((oldName: string, newName: string) => {
+    const n = newName.trim().toLowerCase();
+    if (!n || n === oldName) return;
+    setPrefs((p) => {
+      const interests = { ...p.interests };
+      interests[oldName] = 0;
+      interests[n] = 1;
+      return { interests };
+    });
+    setTopicOrder((o) => o.map((t) => (t === oldName ? n : t)));
+    const active = topicOrder.map((t) => (t === oldName ? n : t))
+    refreshLive(active);
+  }, [topicOrder, refreshLive]);
+
   const reorderTopics = useCallback((newOrder: string[]) => {
     setTopicOrder(newOrder);
     const active = newOrder.filter((t) => (prefs.interests[t] ?? 0) > 0);
@@ -234,7 +249,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, reorderTopics, prefetchFeed, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, reorderTopics, renameTopic, prefetchFeed, reset,
     }),
     [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );
