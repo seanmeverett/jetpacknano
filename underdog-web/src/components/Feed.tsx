@@ -168,7 +168,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
           <span className="tag" style={{ background: topic.color, color: '#FFFFFF' }}><TopicIcon size={12} /> {topic.label}</span>
           <span className="age">{ageText(post.ageHours)}</span>
         </div>
-        <p className="caption"><LinkText text={post.caption} /></p>
+        {(post.imageUrl || post.media || post.embedUrl || post.audio) && <p className="caption"><LinkText text={post.caption} /></p>}
         <button className="why-link" onClick={onWhy}><IoSparkles size={13} color="var(--accent)" /> Why am I seeing this?</button>
         {post.permalink
           ? <a className="photo-credit" href={post.permalink} target="_blank" rel="noreferrer">↗ {post.community || 'source'} &middot; open original</a>
