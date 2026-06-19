@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../store';
 import { TOPICS } from '../seed';
-import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline, IoClose } from '../icons';
+import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline, IoClose, IoCreateOutline } from '../icons';
 
 export function Onboarding() {
   const { finishOnboarding, prefetchFeed } = useApp();
   const [picked, setPicked] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState('');
+  const [editingTopic, setEditingTopic] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const editRef = useRef<HTMLInputElement>(null);
 
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -19,10 +22,27 @@ export function Onboarding() {
 
   const removeCustom = (t: string) => setPicked((p) => p.filter((x) => x !== t));
 
+  const startEdit = (t: string) => {
+    setEditingTopic(t);
+    setEditValue(t);
+    setTimeout(() => editRef.current?.focus(), 50);
+  };
+
+  const saveEdit = () => {
+    if (!editingTopic) return;
+    const newVal = editValue.trim().toLowerCase();
+    if (newVal && newVal !== editingTopic && !picked.includes(newVal)) {
+      setPicked((p) => p.map((x) => (x === editingTopic ? newVal : x)));
+    }
+    setEditingTopic(null);
+    setEditValue('');
+  };
+
+  const cancelEdit = () => { setEditingTopic(null); setEditValue(''); };
+
   const ready = picked.length >= 3;
   const customTopics = picked.filter((t) => !TOPICS.some((tp) => tp.id === t));
 
-  // Preload live content as soon as the user has picked enough topics
   useEffect(() => {
     if (picked.length >= 3) prefetchFeed(picked);
   }, [picked.length, prefetchFeed]);
@@ -49,7 +69,6 @@ export function Onboarding() {
           })}
         </div>
 
-        {/* Custom topic input */}
         <div className="section-label">Or add your own topic</div>
         <div className="custom-topic-row">
           <input
@@ -65,10 +84,28 @@ export function Onboarding() {
         {customTopics.length > 0 && (
           <div className="custom-chips">
             {customTopics.map((t) => (
-              <button key={t} className="chip on custom-chip" onClick={() => removeCustom(t)}>
-                <span>#{t}</span>
-                <IoClose size={14} color="var(--brand)" />
-              </button>
+              <div key={t} className="custom-chip-wrapper">
+                {editingTopic === t ? (
+                  <input
+                    ref={editRef}
+                    className="custom-chip-edit"
+                    value={editValue}
+                    maxLength={40}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                    onBlur={saveEdit}
+                  />
+                ) : (
+                  <div className="chip on custom-chip">
+                    <button className="chip-edit-btn" onClick={() => startEdit(t)}><IoCreateOutline size={13} color="var(--brand)" /></button>
+                    <span>#{t}</span>
+                    <button className="chip-remove-btn" onClick={() => removeCustom(t)}><IoClose size={14} color="var(--brand)" /></button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

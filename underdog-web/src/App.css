@@ -209,3 +209,9 @@ input[type=range].good { accent-color:var(--good); }
 .drag-handle:active { cursor: grabbing; }
 .sortable-topic-label { flex: 1; color: var(--text); font-size: 15px; font-weight: 700; text-transform: capitalize; }
 .topic-remove { display: flex; align-items: center; padding: 4px; }
+.custom-chip-wrapper { display: inline-flex; }
+.custom-chip-edit { background: var(--bg-soft); border: 1px solid var(--brand); border-radius: 999px; padding: 8px 14px; color: var(--text); font-size: 13px; font-weight: 700; outline: none; min-width: 80px; }
+.chip-edit-btn { display: flex; align-items: center; padding: 2px; opacity: 0.6; }
+.chip-edit-btn:active { opacity: 1; }
+.chip-remove-btn { display: flex; align-items: center; padding: 2px; margin-left: 2px; opacity: 0.6; }
+.chip-remove-btn:active { opacity: 1; }
