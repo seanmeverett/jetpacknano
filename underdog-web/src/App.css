@@ -201,3 +201,11 @@ input[type=range].good { accent-color:var(--good); }
 .topic-chip.active { border-color: var(--brand); background: rgba(255,0,0,0.12); color: var(--text); }
 .topic-add-row { display: flex; gap: 8px; margin-bottom: 16px; }
 .topic-hint { color: var(--faint); font-size: 12px; line-height: 1.4; margin-top: 12px; }
+
+/* ---------- Sortable topic list (drag to reorder) ---------- */
+.sortable-topic { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; touch-action: none; }
+.sortable-topic:active { border-color: var(--brand); }
+.drag-handle { display: flex; align-items: center; cursor: grab; touch-action: none; padding: 4px; }
+.drag-handle:active { cursor: grabbing; }
+.sortable-topic-label { flex: 1; color: var(--text); font-size: 15px; font-weight: 700; text-transform: capitalize; }
+.topic-remove { display: flex; align-items: center; padding: 4px; }

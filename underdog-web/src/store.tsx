@@ -20,6 +20,8 @@ interface Persisted {
   liked: Record<string, boolean>;
   followed: Record<string, boolean>;
   comments: Record<string, Comment[]>;
+  seedComments: Record<string, Comment[]>;
+  topicOrder: string[];
 }
 
 interface AppState {
@@ -47,6 +49,8 @@ interface AppState {
   prefetchFeed: (topics: string[]) => void;
   addTopic: (topic: string) => void;
   removeTopic: (topic: string) => void;
+  topicOrder: string[];
+  reorderTopics: (newOrder: string[]) => void;
   reset: () => void;
 }
 
@@ -82,13 +86,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [comments, setComments] = useState<Record<string, Comment[]>>(saved.comments ?? {});
   const [posts, setPosts] = useState<Post[]>([]); // live-only, no stock seed
   const [prefetched, setPrefetched] = useState<{ posts: Post[]; users: import('./types').User[] } | null>(null);
+  const [topicOrder, setTopicOrder] = useState<string[]>(saved.topicOrder ?? []);
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
   // On mount: if already onboarded, start fetching live content immediately (don't wait for finishOnboarding)
   useEffect(() => {
     if (onboardingDone) {
-      const interests = Object.entries(prefs.interests).filter(([, w]) => w > 0).map(([t]) => t);
+      const interests = (saved.topicOrder ?? []).filter((t) => (prefs.interests[t] ?? 0) > 0);
       if (interests.length) refreshLive(interests);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,8 +123,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Persist the meaningful state to a cookie whenever it changes.
   useEffect(() => {
-    setCookie(COOKIE, { onboardingDone, prefs, opts, liked, followed, comments });
-  }, [onboardingDone, prefs, opts, liked, followed, comments]);
+    setCookie(COOKIE, { onboardingDone, prefs, opts, liked, followed, comments, topicOrder });
+  }, [onboardingDone, prefs, opts, liked, followed, comments, topicOrder]);
+
 
   const prefetchFeed = useCallback((topics: string[]) => {
     fetchLiveFeed(topics).then((items) => {
@@ -144,6 +150,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     setOnboardingDone(true);
     setScreen('feed');
+    setTopicOrder(interests as string[]);
     // Use prefetched content if available (started during onboarding) for instant load
     if (prefetched) {
       setPosts(prefetched.posts);
@@ -176,7 +183,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Background refresh: keep feed fresh every 2 minutes when viewing feed
   useEffect(() => {
     if (screen !== 'feed' || !onboardingDone) return;
-    const interests = Object.entries(prefs.interests).filter(([, w]) => w > 0).map(([t]) => t);
+    const interests = topicOrder.filter((t) => (prefs.interests[t] ?? 0) > 0);
     if (!interests.length) return;
     const id = setInterval(() => refreshLive(interests), 120000);
     return () => clearInterval(id);
@@ -186,16 +193,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const t = topic.trim().toLowerCase();
     if (!t) return;
     setPrefs((p) => ({ interests: { ...p.interests, [t]: 1 } }));
-    // refresh feed with updated topics
-    const allTopics = Object.entries({ ...prefs.interests, [t]: 1 }).filter(([, w]) => w > 0).map(([k]) => k);
+    setTopicOrder((o) => o.includes(t) ? o : [...o, t]);
+    const allTopics = [...topicOrder.filter((x) => x !== t), t].filter((x) => (prefs.interests[x] ?? 1) > 0);
     refreshLive(allTopics);
-  }, [prefs.interests, refreshLive]);
+  }, [prefs.interests, topicOrder, refreshLive]);
 
   const removeTopic = useCallback((topic: string) => {
     setPrefs((p) => ({ interests: { ...p.interests, [topic]: 0 } }));
-    const allTopics = Object.entries(prefs.interests).filter(([k, w]) => w > 0 && k !== topic).map(([k]) => k);
+    setTopicOrder((o) => o.filter((x) => x !== topic));
+    const allTopics = topicOrder.filter((x) => x !== topic && (prefs.interests[x] ?? 0) > 0);
     if (allTopics.length > 0) refreshLive(allTopics); else setPosts([]);
-  }, [prefs.interests, refreshLive, setPosts]);
+  }, [prefs.interests, topicOrder, refreshLive, setPosts]);
+
+  const reorderTopics = useCallback((newOrder: string[]) => {
+    setTopicOrder(newOrder);
+    const active = newOrder.filter((t) => (prefs.interests[t] ?? 0) > 0);
+    if (active.length > 0) refreshLive(active);
+  }, [prefs.interests, refreshLive]);
 
   const addComment = useCallback((postId: string, text: string) => {
     const clean = text.trim().slice(0, 280);
@@ -207,6 +221,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLiked({});
     setFollowed({});
     setComments({});
+    setTopicOrder([]);
     setPrefs({ interests: emptyInterests() });
     setOpts(defaultOpts);
     setOnboardingDone(false);
@@ -219,7 +234,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, addTopic, removeTopic, prefetchFeed, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, reorderTopics, prefetchFeed, reset,
     }),
     [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );
