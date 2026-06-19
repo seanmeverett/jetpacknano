@@ -25,6 +25,9 @@ const Q: Record<string, { m: string[]; y: string[] }> = {
   science: { m: ['science', 'scicomm'], y: ['science', 'science news'] },
   pets: { m: ['pets', 'cats'], y: ['pets', 'cute animals'] },
   diy: { m: ['diy', 'maker'], y: ['diy', 'diy projects'] },
+  ai: { m: ['ai', 'artificialintelligence'], y: ['AI', 'artificial intelligence', 'machine learning'] },
+  'artificial intelligence': { m: ['ai', 'artificialintelligence'], y: ['AI', 'artificial intelligence', 'machine learning'] },
+  'machine learning': { m: ['machinelearning'], y: ['machine learning', 'ML tutorial'] },
 };
 
 const isEnglish = (s: any): boolean => {
@@ -65,7 +68,7 @@ const parseDuration = (iso: string): number => {
 // Official YouTube Data API v3
 async function youtubeOfficial(q: string, topic: string, apiKey: string): Promise<Item[]> {
   try {
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=date&maxResults=15&key=${apiKey}`;
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=date&maxResults=15&relevanceLanguage=en&regionCode=US&key=${apiKey}`;
     const sr = await fetch(searchUrl, { headers: { 'Referer': REFERER } });
     if (!sr.ok) return [];
     const sj: any = await sr.json();
