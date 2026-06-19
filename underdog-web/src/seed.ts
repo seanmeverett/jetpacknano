@@ -140,4 +140,4 @@ export const userById = (id: string): User =>
   USERS.find((u) => u.id === id) ?? USERS[0];
 
 export const topicById = (id: string) =>
-  TOPICS.find((t) => t.id === id) ?? TOPICS[0];
+  TOPICS.find((t) => t.id === id) ?? { id, label: id, icon: 'pricetag', color: '#FF0000' } as any;

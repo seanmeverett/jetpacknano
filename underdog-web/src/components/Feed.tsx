@@ -111,7 +111,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
   // only the active card can ever play sound; adjacent pre-mounted videos stay muted
   const cardMuted = muted || index !== activeIndex;
   const topic = topicById(post.topic);
-  const TopicIcon = TOPIC_ICONS[post.topic];
+  const TopicIcon = TOPIC_ICONS[post.topic] || null; // null for custom topics (no icon)
   const freshFace = creator.followers < 100;
   const lastTap = useRef(0);
   const [burst, setBurst] = useState(false);
@@ -169,7 +169,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
           <button className={`follow-btn ${followed ? "following" : ""}`} onClick={onFollow}>{followed ? "Following" : "Follow"}</button>
         </div>
         <div className="tag-row">
-          <span className="tag" style={{ background: topic.color, color: '#FFFFFF' }}><TopicIcon size={12} /> {topic.label}</span>
+          <span className="tag" style={{ background: topic.color, color: '#FFFFFF' }}>{TopicIcon && <TopicIcon size={12} />} {topic.label}</span>
           <span className="age">{ageText(post.ageHours)}</span>
         </div>
         {(post.imageUrl || post.media || post.embedUrl || post.audio) && <p className="caption"><LinkText text={post.caption} /></p>}
