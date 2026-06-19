@@ -82,7 +82,15 @@ async function youtubeOfficial(q: string, topic: string, apiKey: string): Promis
     const detailsMap: Record<string, any> = {};
     for (const v of dj.items || []) detailsMap[v.id] = v;
 
-    return (sj.items || []).map((v: any) => {
+    return (sj.items || []).filter((v: any) => {
+      // English-only filter: check defaultLanguage/defaultAudioLanguage + title non-ASCII
+      const lang = v.snippet?.defaultLanguage || v.snippet?.defaultAudioLanguage;
+      if (lang && lang !== 'en' && !lang.startsWith('en-')) return false;
+      const title = v.snippet?.title || '';
+      const nonAscii = (title.match(/[^\x00-\x7F]/g) || []).length;
+      if (nonAscii / Math.max(1, title.length) > 0.2) return false;
+      return true;
+    }).map((v: any) => {
       const vid = v.id?.videoId;
       if (!vid) return null;
       const det = detailsMap[vid] || {};
