@@ -184,3 +184,20 @@ input[type=range].good { accent-color:var(--good); }
 .loading-sub { color: var(--text-faint); font-size: 14px; text-align:left; max-width: 280px; line-height: 1.5; }
 .inline-link { color: var(--accent); text-decoration: underline; overflow-wrap: break-word; word-break: break-all; }
 .inline-link:active { opacity: 0.7; }
+
+/* ---------- Custom topic input + topics sheet ---------- */
+.custom-topic-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.custom-topic-input { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; color: var(--text); font-size: 16px; outline: none; }
+.custom-topic-input:focus { border-color: var(--brand); }
+.custom-topic-input::placeholder { color: var(--faint); }
+.custom-topic-add { padding: 12px 18px; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 800; font-size: 14px; }
+.custom-topic-add:disabled { opacity: 0.4; }
+.custom-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.custom-chip { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--brand); background: rgba(255,0,0,0.1); color: var(--text); font-size: 13px; font-weight: 700; }
+.topic-section { margin-bottom: 16px; }
+.topic-section-label { color: var(--dim); font-size: 12px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+.topic-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.topic-chip { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--dim); font-size: 13px; font-weight: 600; }
+.topic-chip.active { border-color: var(--brand); background: rgba(255,0,0,0.12); color: var(--text); }
+.topic-add-row { display: flex; gap: 8px; margin-bottom: 16px; }
+.topic-hint { color: var(--faint); font-size: 12px; line-height: 1.4; margin-top: 12px; }

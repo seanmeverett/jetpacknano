@@ -57,5 +57,5 @@ export interface RankedPost {
 }
 
 export interface ViewerPrefs {
-  interests: Record<TopicId, number>; // weight 0..1
+  interests: Record<string, number>; // weight 0..1 (supports custom topics)
 }

@@ -4,7 +4,7 @@ import { TOPICS } from './seed';
 import { loadUsers, loadComments, fetchLiveFeed, liveToPosts } from './api';
 import { getCookie, setCookie, deleteCookie } from './cookies';
 
-type TopicId = ViewerPrefs['interests'] extends Record<infer K, number> ? K : never;
+type TopicId = string; // any topic, including custom free-text
 
 export interface Comment {
   id: string;
@@ -45,6 +45,8 @@ interface AppState {
   toggleFollow: (creatorId: string) => void;
   addComment: (postId: string, text: string) => void;
   prefetchFeed: (topics: string[]) => void;
+  addTopic: (topic: string) => void;
+  removeTopic: (topic: string) => void;
   reset: () => void;
 }
 
@@ -180,6 +182,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [screen, onboardingDone, prefs.interests, refreshLive]);
 
+  const addTopic = useCallback((topic: string) => {
+    const t = topic.trim().toLowerCase();
+    if (!t) return;
+    setPrefs((p) => ({ interests: { ...p.interests, [t]: 1 } }));
+    // refresh feed with updated topics
+    const allTopics = Object.entries({ ...prefs.interests, [t]: 1 }).filter(([, w]) => w > 0).map(([k]) => k);
+    refreshLive(allTopics);
+  }, [prefs.interests, refreshLive]);
+
+  const removeTopic = useCallback((topic: string) => {
+    setPrefs((p) => ({ interests: { ...p.interests, [topic]: 0 } }));
+    const allTopics = Object.entries(prefs.interests).filter(([k, w]) => w > 0 && k !== topic).map(([k]) => k);
+    if (allTopics.length > 0) refreshLive(allTopics); else setPosts([]);
+  }, [prefs.interests, refreshLive, setPosts]);
+
   const addComment = useCallback((postId: string, text: string) => {
     const clean = text.trim().slice(0, 280);
     if (!clean) return;
@@ -202,7 +219,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, prefetchFeed, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, prefetchFeed, reset,
     }),
     [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, finishOnboarding, toggleInterest, setInterestWeight, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );

@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { TOPICS } from '../seed';
-import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline } from '../icons';
+import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline, IoClose } from '../icons';
 
 export function Onboarding() {
   const { finishOnboarding, prefetchFeed } = useApp();
   const [picked, setPicked] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState('');
+
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  const addCustom = () => {
+    const t = customInput.trim().toLowerCase();
+    if (t && !picked.includes(t)) setPicked((p) => [...p, t]);
+    setCustomInput('');
+  };
+
+  const removeCustom = (t: string) => setPicked((p) => p.filter((x) => x !== t));
+
   const ready = picked.length >= 3;
+  const customTopics = picked.filter((t) => !TOPICS.some((tp) => tp.id === t));
 
   // Preload live content as soon as the user has picked enough topics
   useEffect(() => {
@@ -18,9 +30,10 @@ export function Onboarding() {
   return (
     <div className="onboard" style={{ background: 'radial-gradient(120% 80% at 50% 0%, #590000 0%, #000000 70%)' }}>
       <div className="onboard-scroll">
-        <div className="logo-row"><span className="brand-icon logo-icon" /><span className="logo">Jetpack Nano</span></div>
+        <div className="logo-row"><span className="brand-icon" /><span className="logo">Jetpack Nano</span></div>
         <h1 className="h1">Where zero wins.</h1>
-        <p className="lede">The feed that spreads attention around. Posts with fewer likes reach farther — so you meet original people, not the same five accounts. Pick a few things you like and we'll show you the originals.</p>
+        <p className="lede">The feed that spreads attention around. Posts with fewer likes reach farther — so you meet original people, not the same five accounts. Pick a few things you like and we'll show you the underdogs.</p>
+
         <div className="section-label">Choose at least 3 interests</div>
         <div className="chip-grid">
           {TOPICS.map((t) => {
@@ -35,6 +48,31 @@ export function Onboarding() {
             );
           })}
         </div>
+
+        {/* Custom topic input */}
+        <div className="section-label">Or add your own topic</div>
+        <div className="custom-topic-row">
+          <input
+            className="custom-topic-input"
+            placeholder="e.g. SpaceX, machine learning, sourdough…"
+            value={customInput}
+            maxLength={40}
+            onChange={(e) => setCustomInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') addCustom(); }}
+          />
+          <button className="custom-topic-add" onClick={addCustom} disabled={!customInput.trim()}>Add</button>
+        </div>
+        {customTopics.length > 0 && (
+          <div className="custom-chips">
+            {customTopics.map((t) => (
+              <button key={t} className="chip on custom-chip" onClick={() => removeCustom(t)}>
+                <span>#{t}</span>
+                <IoClose size={14} color="var(--brand)" />
+              </button>
+            ))}
+          </div>
+        )}
+
         <button className={`primary-btn ${ready ? '' : 'disabled'}`} disabled={!ready} onClick={() => finishOnboarding(picked as any)}>
           {ready ? 'Enter the feed' : `Pick ${3 - picked.length} more`}
           <IoArrowForwardOutline size={18} />
