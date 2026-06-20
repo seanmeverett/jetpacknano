@@ -17,11 +17,12 @@ export interface LiveItem {
 
 export interface FeedResult { items: LiveItem[]; }
 
-export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US', seenIds: string[] = []): Promise<FeedResult> {
+export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US', seenIds: string[] = [], fresh = false): Promise<FeedResult> {
   try {
     const params = new URLSearchParams({ topics: topics.join(','), lang, region });
     // Limit to last 100 seen IDs to avoid URL length limits
     if (seenIds.length) params.set('seen', seenIds.slice(-200).join(','));
+    if (fresh) params.set('fresh', '1');
     const r = await fetch('/api/feed?' + params.toString());
     if (!r.ok) return { items: [] };
     const j = await r.json();

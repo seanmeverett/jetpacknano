@@ -25,7 +25,7 @@ const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h
 const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen, loadMore, loadingMore } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen, loadMore, loadingMore, noMoreContent } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
   const [shareFor, setShareFor] = useState<RankedPost | null>(null);
@@ -88,7 +88,16 @@ export function Feed() {
         {ranked.map((rp, i) => (
           <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={mergedComments(rp.post.id).length} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} />
         ))}
-        {loadingMore && <div className="load-more-spinner"><div className="spinner" /></div>}
+        {/* End-of-feed loading / end card — full height so user can scroll to it */}
+        <div className="card end-card">
+          {loadingMore ? (
+            <div className="end-card-content"><div className="spinner" /><span>Loading more content…</span></div>
+          ) : noMoreContent ? (
+            <div className="end-card-content"><span className="end-text">You're all caught up!</span><span className="end-sub">Refresh the page for the latest content.</span></div>
+          ) : (
+            <div className="end-card-content"><div className="spinner" /></div>
+          )}
+        </div>
       </div>
 
       <div className="topbar">

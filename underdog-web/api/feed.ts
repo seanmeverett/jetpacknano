@@ -11,5 +11,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const lang = String(req.query.lang || 'en');
   const region = String(req.query.region || 'US');
   const seen = String(req.query.seen || '').split(',').filter(Boolean);
-  res.json(await buildFeed(topics, process.env.YOUTUBE_API_KEY, lang, region, process.env.X_API_BEARER_TOKEN, seen));
+  const fresh = req.query.fresh === '1';
+  res.json(await buildFeed(topics, process.env.YOUTUBE_API_KEY, lang, region, process.env.X_API_BEARER_TOKEN, seen, fresh));
 }

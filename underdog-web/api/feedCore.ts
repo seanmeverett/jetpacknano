@@ -134,7 +134,7 @@ const parseDuration = (iso: string): number => {
 async function youtubeOfficial(q: string, topic: string, apiKey: string, lang = 'en', region = 'US'): Promise<Item[]> {
   try {
     const publishedAfter = new Date(Date.now() - 4 * 86400000).toISOString();
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=relevance&maxResults=25&relevanceLanguage=${lang}&regionCode=${region}&publishedAfter=${publishedAfter}&key=${apiKey}`;
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=relevance&maxResults=50&relevanceLanguage=${lang}&regionCode=${region}&publishedAfter=${publishedAfter}&key=${apiKey}`;
     const sr = await fetch(searchUrl, { headers: { 'Referer': REFERER } });
     if (!sr.ok) return [];
     const sj: any = await sr.json();
@@ -381,12 +381,13 @@ async function xTopicTweets(topic: string, lang = 'en'): Promise<Item[]> {
 // Searches ALL of X for tweets matching the topic, sorted by relevance/engagement.
 // Falls back to xTopicTweets (guest token + curated accounts) if credentials are insufficient.
 
-async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): Promise<Item[]> {
+async function xSearchTweets(topic: string, bearerToken: string, lang = 'en', fresh = false): Promise<Item[]> {
   if (!bearerToken) return [];
   try {
     // Search X for the exact topic the user entered — no extra keywords
     const query = encodeURIComponent(`${topic} -is:retweet lang:${lang} min_faves:10`);
-    const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=50&sort_order=relevancy&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url,public_metrics&media.fields=url,preview_image_url,type,duration_ms,variants`;
+    const sortOrder = fresh ? 'recency' : 'relevancy';
+    const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=100&sort_order=${sortOrder}&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url,public_metrics&media.fields=url,preview_image_url,type,duration_ms,variants`;
 
     const r = await fetch(url, {
       headers: { 'Authorization': `Bearer ${bearerToken}`, 'User-Agent': UA },
@@ -456,7 +457,7 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
 const engagementScore = (it: Item) => it.likes + it.comments * 3;
 
 
-export async function buildFeed(topics: string[], youtubeApiKey?: string, lang = 'en', region = 'US', xBearerToken?: string, seenIds: string[] = []) {
+export async function buildFeed(topics: string[], youtubeApiKey?: string, lang = 'en', region = 'US', xBearerToken?: string, seenIds: string[] = [], fresh = false) {
   const tasks: Promise<Item[]>[] = [];
   const seenSet = new Set(seenIds);
 
@@ -475,7 +476,7 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
     ytQueries.forEach((y) => tasks.push(youtubeQuery(y, topic, youtubeApiKey, lang, region)));
     // X/Twitter: search for the exact topic using v2 API, fall back to curated accounts
     if (xBearerToken) {
-      tasks.push(xSearchTweets(topic, xBearerToken, lang).then((items) => items.length ? items : xTopicTweets(topic, lang)));
+      tasks.push(xSearchTweets(topic, xBearerToken, lang, fresh).then((items) => items.length ? items : xTopicTweets(topic, lang)));
     } else {
       tasks.push(xTopicTweets(topic, lang));
     }

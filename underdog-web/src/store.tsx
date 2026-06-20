@@ -53,6 +53,7 @@ interface AppState {
   prefetchFeed: (topics: string[], lang?: string, region?: string) => void;
   loadMore: () => void;
   loadingMore: boolean;
+  noMoreContent: boolean;
   addTopic: (topic: string) => void;
   removeTopic: (topic: string) => void;
   topicOrder: string[];
@@ -103,6 +104,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const seenIdsRef = useRef(seenIds);
   useEffect(() => { seenIdsRef.current = seenIds; }, [seenIds]);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [noMoreContent, setNoMoreContent] = useState(false);
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
@@ -171,12 +173,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
   // Load more content when user reaches the end of the feed — appends to existing posts
   const loadMore = useCallback(() => {
-    if (loadingMore) return;
+    if (loadingMore || noMoreContent) return;
     const activeTopics = topicOrder.filter((t) => (prefs.interests[t] ?? 0) > 0);
     if (!activeTopics.length) return;
     setLoadingMore(true);
     const currentSeen = seenIdsRef.current;
-    fetchLiveFeed(activeTopics, prefs.lang || 'en', prefs.region || 'US', currentSeen).then((res) => {
+    fetchLiveFeed(activeTopics, prefs.lang || 'en', prefs.region || 'US', currentSeen, true).then((res) => {
       const seenSet = new Set(currentSeen);
       const filtered = res.items.filter((it) => !seenSet.has(it.id));
       if (filtered.length) {
@@ -184,11 +186,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setPosts((prev) => [...prev, ...lp]);
         setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
         markSeen(lp.map((p) => p.id));
+        setNoMoreContent(false);
+      } else {
+        setNoMoreContent(true);
       }
     }).catch(() => {}).finally(() => setLoadingMore(false));
-  }, [loadingMore, topicOrder, prefs.interests, prefs.lang, prefs.region, markSeen]);
+  }, [loadingMore, noMoreContent, topicOrder, prefs.interests, prefs.lang, prefs.region, markSeen]);
 
   const finishOnboarding = useCallback((interests: TopicId[], lang = 'en', region = 'US') => {
+    setNoMoreContent(false);
     // Keep seenIds from previous session so viewed/loaded content isn't repeated on refresh
     setPrefs({
       interests: { ...emptyInterests(), ...Object.fromEntries(interests.map((t) => [t, 1])) } as ViewerPrefs['interests'],
@@ -306,9 +312,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, loadMore, loadingMore, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, loadMore, loadingMore, noMoreContent, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, loadMore, loadingMore, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, loadMore, loadingMore, noMoreContent, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
