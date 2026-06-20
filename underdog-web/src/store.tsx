@@ -66,7 +66,7 @@ const emptyInterests = () =>
   }, {} as Record<string, number>) as ViewerPrefs['interests'];
 
 const defaultOpts: RankOptions = {
-  mode: 'inverse',
+  mode: 'standard',
   inverseStrength: 0.62,
   diversityOn: true,
   freshnessHalfLifeHours: 72,
