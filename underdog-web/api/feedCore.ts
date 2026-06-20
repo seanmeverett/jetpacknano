@@ -354,6 +354,78 @@ async function xTopicTweets(topic: string, lang = 'en'): Promise<Item[]> {
   return items.slice(0, 25);
 }
 
+
+// ─── X API v2 search (proper credentials — requires Basic tier or higher) ───
+// Searches ALL of X for tweets matching the topic, sorted by relevance/engagement.
+// Falls back to xTopicTweets (guest token + curated accounts) if credentials are insufficient.
+
+async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): Promise<Item[]> {
+  if (!bearerToken) return [];
+  try {
+    // Build search query: topic keywords, exclude retweets, filter by language
+    const q = Q[topic]?.y?.[0] || topic;
+    const query = encodeURIComponent(`(${q} OR ${topic}) -is:retweet lang:${lang}`);
+    const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=50&sort_order=relevancy&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url&media.fields=url,preview_image_url,type,duration_ms`;
+
+    const r = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${bearerToken}`, 'User-Agent': UA },
+    });
+    if (!r.ok) return []; // 402 (CreditsDepleted) or 401 → fall back to guest token
+    const j = await r.json() as any;
+
+    const users: Record<string, any> = {};
+    for (const u of j.includes?.users || []) users[u.id] = u;
+    const mediaMap: Record<string, any> = {};
+    for (const m of j.includes?.media || []) mediaMap[m.media_key] = m;
+
+    const items: Item[] = [];
+    for (const tw of j.data || []) {
+      // Skip replies and quote tweets — only original content
+      const refs = tw.referenced_tweets || [];
+      if (refs.some((r: any) => r.type === 'replied_to' || r.type === 'quoted')) continue;
+      if (tw.lang && tw.lang !== lang) continue;
+
+      const text = (tw.text || '').replace(/https?:\/\/t\.co\/\S+/g, '').trim();
+      if (!text || (lang === 'en' && hasNonLatinScript(text))) continue;
+
+      const user = users[tw.author_id] || {};
+      const metrics = tw.public_metrics || {};
+      const created = tw.created_at ? new Date(tw.created_at).getTime() : Date.now();
+
+      // Parse media attachments
+      const media: string[] = [];
+      let type: Item['type'] = 'text'; let format = 'text'; let thumb: string | undefined;
+      for (const key of tw.attachments?.media_keys || []) {
+        const m = mediaMap[key];
+        if (!m) continue;
+        if (m.type === 'video' || m.type === 'animated_gif') {
+          if (m.url) { media.push(m.url); type = 'video'; format = 'short video'; }
+        } else if (m.type === 'photo') {
+          if (m.url) { media.push(m.url); if (type === 'text') { type = 'image'; format = 'image'; } }
+        }
+      }
+      if (type === 'text' && media.length > 1) { type = 'story'; format = 'story'; }
+      if (!thumb && media[0]) thumb = media[0];
+
+      items.push({
+        id: 'xs_' + tw.id, topic, type, format,
+        title: text.slice(0, 500),
+        author: '@' + (user.username || 'unknown'),
+        community: 'x.com',
+        permalink: `https://x.com/${user.username}/status/${tw.id}`,
+        likes: metrics.like_count || 0,
+        comments: metrics.reply_count || 0,
+        ageHours: Math.max(0, (Date.now() - created) / 3600000),
+        media: media.length ? media : undefined,
+        thumb, provider: 'x',
+      });
+    }
+    // Sort by engagement (likes + replies*3 + retweets*2)
+    items.sort((a, b) => (b.likes + b.comments * 3) - (a.likes + a.comments * 3));
+    return items.slice(0, 25);
+  } catch { return []; }
+}
+
 const FORMAT_PRIORITY = ['short video', 'video', 'long video', 'image', 'story', 'audio', 'text'];
 const engagementScore = (it: Item) => it.likes + it.comments * 3;
 
@@ -367,7 +439,7 @@ function interleaveByFormat(items: Item[]): Item[] {
   return result;
 }
 
-export async function buildFeed(topics: string[], youtubeApiKey?: string, lang = 'en', region = 'US') {
+export async function buildFeed(topics: string[], youtubeApiKey?: string, lang = 'en', region = 'US', xBearerToken?: string) {
   const tasks: Promise<Item[]>[] = [];
 
   // Fetch X trending topics for the user's region — use matching ones as extra YouTube queries
@@ -387,7 +459,12 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
     const q = Q[topic] ?? { m: [topic], y: [topic] };
     q.m.forEach((tag) => tasks.push(mastodonTag(tag, topic, lang)));
     q.y.forEach((y) => tasks.push(youtubeQuery(y, topic, youtubeApiKey, lang, region)));
-    tasks.push(xTopicTweets(topic, lang)); // X/Twitter curated accounts
+    // X/Twitter: try v2 search first (proper API), fall back to curated accounts (guest token)
+    if (xBearerToken) {
+      tasks.push(xSearchTweets(topic, xBearerToken, lang).then((items) => items.length ? items : xTopicTweets(topic, lang)));
+    } else {
+      tasks.push(xTopicTweets(topic, lang));
+    }
     // Use X trending topics matching this topic as extra YouTube queries
     for (const trend of matchingTrends) {
       tasks.push(youtubeQuery(trend, topic, youtubeApiKey, lang, region));
