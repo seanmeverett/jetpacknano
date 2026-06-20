@@ -63,7 +63,7 @@ export function Feed() {
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="loading-state">
           <div className="loading-text">Finding fresh content for you…</div>
-          <div className="loading-sub">Searching the open social web + YouTube for your interests.</div>
+          <div className="loading-sub">Searching X + YouTube for trending content in your interests.</div>
         </div>
       </div>
     );
