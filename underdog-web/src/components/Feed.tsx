@@ -25,7 +25,7 @@ const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h
 const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen, loadMore, loadingMore } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
   const [shareFor, setShareFor] = useState<RankedPost | null>(null);
@@ -67,10 +67,17 @@ export function Feed() {
     );
   }
 
+  const loadingMoreRef = useRef(false);
   const onScroll = () => {
     const el = scroller.current; if (!el) return;
     const i = Math.round(el.scrollTop / el.clientHeight);
     if (i !== idx && i >= 0 && i < ranked.length) setIdx(i);
+    // Trigger load more when user reaches the last 2 cards
+    if (i >= ranked.length - 2 && !loadingMoreRef.current && !loadingMore) {
+      loadingMoreRef.current = true;
+      loadMore();
+      setTimeout(() => { loadingMoreRef.current = false; }, 3000);
+    }
   };
 
   return (
@@ -79,6 +86,7 @@ export function Feed() {
         {ranked.map((rp, i) => (
           <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={mergedComments(rp.post.id).length} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} />
         ))}
+        {loadingMore && <div className="load-more-spinner"><div className="spinner" /></div>}
       </div>
 
       <div className="topbar">
