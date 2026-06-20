@@ -42,11 +42,11 @@ export function Onboarding() {
 
   const cancelEdit = () => { setEditingTopic(null); setEditValue(''); };
 
-  const ready = picked.length >= 3;
+  const ready = picked.length >= 1;
   const customTopics = picked.filter((t) => !TOPICS.some((tp) => tp.id === t));
 
   useEffect(() => {
-    if (picked.length >= 3) prefetchFeed(picked, lang, region);
+    if (picked.length >= 1) prefetchFeed(picked, lang, region);
   }, [picked.length, prefetchFeed]);
 
   return (
@@ -56,7 +56,7 @@ export function Onboarding() {
         <h1 className="h1">Where zero wins.</h1>
         <p className="lede">The feed that spreads attention around. Posts with fewer likes reach farther — so you meet original people, not the same five accounts. Pick a few things you like and we'll show you the underdogs.</p>
 
-        <div className="section-label">Choose at least 3 interests</div>
+        <div className="section-label">Choose your interests</div>
         <div className="chip-grid">
           {TOPICS.map((t) => {
             const on = picked.includes(t.id);
@@ -146,7 +146,7 @@ export function Onboarding() {
         </div>
 
         <button className={`primary-btn ${ready ? '' : 'disabled'}`} disabled={!ready} onClick={() => finishOnboarding(picked as any, lang, region)}>
-          {ready ? 'Enter the feed' : `Pick ${3 - picked.length} more`}
+          Enter the feed
           <IoArrowForwardOutline size={18} />
         </button>
       </div>
