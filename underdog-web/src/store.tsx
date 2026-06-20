@@ -23,6 +23,8 @@ interface Persisted {
   seedComments: Record<string, Comment[]>;
   topicOrder: string[];
   trends: string[];
+  seenIds: string[];
+  markSeen: (ids: string[]) => void;
 }
 
 interface AppState {
@@ -54,6 +56,8 @@ interface AppState {
   removeTopic: (topic: string) => void;
   topicOrder: string[];
   trends: string[];
+  seenIds: string[];
+  markSeen: (ids: string[]) => void;
   reorderTopics: (newOrder: string[]) => void;
   renameTopic: (oldName: string, newName: string) => void;
   reset: () => void;
@@ -92,6 +96,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [prefetched, setPrefetched] = useState<{ posts: Post[]; users: import('./types').User[] } | null>(null);
   const [topicOrder, setTopicOrder] = useState<string[]>(saved.topicOrder ?? []);
   const [trends, setTrends] = useState<string[]>([]);
+  const [seenIds, setSeenIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('jetpacknano_seen') || '[]'); } catch { return []; }
+  });
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
@@ -134,7 +141,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
 
   const prefetchFeed = useCallback((topics: string[], lang = 'en', region = 'US') => {
-    fetchLiveFeed(topics, lang, region).then((res) => {
+    fetchLiveFeed(topics, lang, region, seenIds).then((res) => {
       if (!res.items.length) return;
       const { posts: lp, users: lu } = liveToPosts(res.items);
       setPrefetched({ posts: lp, users: lu });
@@ -143,7 +150,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshLive = useCallback((topics: string[], lang = 'en', region = 'US') => {
-    fetchLiveFeed(topics, lang, region).then((res) => {
+    fetchLiveFeed(topics, lang, region, seenIds).then((res) => {
       if (!res.items.length) return;
       const { posts: lp, users: lu } = liveToPosts(res.items);
       setPosts(lp);
@@ -176,6 +183,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPrefs((p) => ({ ...p, interests: { ...p.interests, [t]: w } as ViewerPrefs['interests'] }));
   }, []);
   const setLang = useCallback((lang: string) => setPrefs((p) => ({ ...p, lang })), []);
+  const markSeen = useCallback((ids: string[]) => {
+    setSeenIds((prev) => {
+      const set = new Set(prev);
+      for (const id of ids) set.add(id);
+      // Keep last 500 seen IDs to avoid unbounded growth
+      const arr = [...set];
+      const trimmed = arr.length > 500 ? arr.slice(arr.length - 500) : arr;
+      try { localStorage.setItem('jetpacknano_seen', JSON.stringify(trimmed)); } catch {}
+      return trimmed;
+    });
+  }, []);
   const setRegion = useCallback((region: string) => setPrefs((p) => ({ ...p, region })), []);
 
   const setMode = useCallback((m: FeedMode) => setOpts((o) => ({ ...o, mode: m })), []);
@@ -252,6 +270,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setOnboardingDone(false);
     setScreen('onboarding');
     deleteCookie(COOKIE);
+    setSeenIds([]);
+    try { localStorage.removeItem('jetpacknano_seen'); } catch {}
   }, []);
 
   const value = useMemo<AppState>(
@@ -259,9 +279,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, trends, reorderTopics, renameTopic, prefetchFeed, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, trends, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, trends, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, trends, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

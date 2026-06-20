@@ -10,5 +10,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!topics.length) return res.json({ items: [], sources: [], count: 0 });
   const lang = String(req.query.lang || 'en');
   const region = String(req.query.region || 'US');
-  res.json(await buildFeed(topics, process.env.YOUTUBE_API_KEY, lang, region, process.env.X_API_BEARER_TOKEN));
+  const seen = String(req.query.seen || '').split(',').filter(Boolean);
+  res.json(await buildFeed(topics, process.env.YOUTUBE_API_KEY, lang, region, process.env.X_API_BEARER_TOKEN, seen));
 }

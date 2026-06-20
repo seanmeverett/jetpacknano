@@ -109,33 +109,7 @@ const Q: Record<string, { m: string[]; y: string[] }> = {
   'machine learning': { m: ['machinelearning'], y: ['machine learning', 'ML tutorial'] },
 };
 
-const isEnglish = (s: any, lang = 'en'): boolean => {
-  const l = s.language;
-  if (l && l !== lang && !l.startsWith(lang + '-')) return false;
-  const text = (s.content || '').replace(/<[^>]+>/g, '');
-  const nonAscii = (text.match(/[^\x00-\x7F]/g) || []).length;
-  return nonAscii / Math.max(1, text.length) < 0.3;
-};
 
-async function mastodonTag(tag: string, topic: string, lang = 'en'): Promise<Item[]> {
-  try {
-    const r = await fetch(`https://mastodon.social/api/v1/timelines/tag/${encodeURIComponent(tag)}?limit=30`, { headers: { 'User-Agent': UA } });
-    if (!r.ok) return [];
-    const statuses = (await r.json()) as any[];
-    return statuses.filter((s) => isEnglish(s, lang)).map((s) => {
-      const media: string[] = []; let type: Item['type'] = 'text'; let format = 'text'; let audio: string | undefined;
-      for (const m of s.media_attachments ?? []) {
-        if (!m?.url) continue;
-        if (m.type === 'video' || m.type === 'gifv') { media.push(m.url); type = 'video'; format = 'video'; }
-        else if (m.type === 'audio') { audio = m.url; type = 'audio'; format = 'audio'; }
-        else if (m.type === 'image') media.push(m.url);
-      }
-      if (type === 'text') { if (media.length > 1) { type = 'story'; format = 'story'; } else if (media.length === 1) { type = 'image'; format = 'image'; } }
-      const text = (s.content || '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
-      return { id: 'ma_' + s.id, topic, type, format, title: text.slice(0, 500) || '(no text)', author: '@' + (s.account?.acct || 'user'), community: 'mastodon.social', media: media.length ? media : undefined, audio, permalink: s.url || s.uri, likes: s.favourites_count || 0, comments: s.replies_count || 0, ageHours: Math.max(0, (Date.now() - new Date(s.created_at).getTime()) / 3600000) };
-    }).filter(Boolean);
-  } catch { return []; }
-}
 
 // Detect non-Latin script chars (Cyrillic, Arabic, Devanagari, CJK, Thai, Hebrew, Indic).
 const hasNonLatinScript = (s: string): boolean => {
@@ -216,7 +190,7 @@ async function youtubePiped(q: string, topic: string): Promise<Item[]> {
         if (!vid) return null;
         const dur = typeof v.duration === 'number' ? v.duration : undefined;
         return { id: 'yt_' + vid, topic, type: 'video' as const, format: dur != null ? (dur <= 60 ? 'short video' : 'long video') : 'video', title: v.title || '(untitled)', author: v.uploader || 'YouTube', community: 'youtube.com', permalink: 'https://www.youtube.com/watch?v=' + vid, likes: v.views || 0, comments: 0, ageHours: v.uploaded ? Math.max(0, (Date.now() - v.uploaded) / 3600000) : 0, duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube', thumb: 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg' };
-      }).filter(Boolean);
+      }).filter((it: Item) => it.ageHours < 168).filter(Boolean);
       if (out.length) return out;
     } catch {}
   }
@@ -362,9 +336,8 @@ async function xTopicTweets(topic: string, lang = 'en'): Promise<Item[]> {
 async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): Promise<Item[]> {
   if (!bearerToken) return [];
   try {
-    // Build search query: topic keywords, exclude retweets, filter by language
-    const q = Q[topic]?.y?.[0] || topic;
-    const query = encodeURIComponent(`(${q} OR ${topic}) -is:retweet lang:${lang}`);
+    // Search X for the exact topic the user entered — no extra keywords
+    const query = encodeURIComponent(`${topic} -is:retweet lang:${lang}`);
     const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=50&sort_order=relevancy&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url&media.fields=url,preview_image_url,type,duration_ms`;
 
     const r = await fetch(url, {
@@ -426,55 +399,50 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
   } catch { return []; }
 }
 
-const FORMAT_PRIORITY = ['short video', 'video', 'long video', 'image', 'story', 'audio', 'text'];
 const engagementScore = (it: Item) => it.likes + it.comments * 3;
 
-function interleaveByFormat(items: Item[]): Item[] {
-  const groups: Record<string, Item[]> = {};
-  for (const it of items) (groups[it.format] ??= []).push(it);
-  for (const fmt of Object.keys(groups)) groups[fmt].sort((a, b) => engagementScore(b) - engagementScore(a) || a.ageHours - b.ageHours);
-  const result: Item[] = [];
-  let added = true;
-  while (added) { added = false; for (const fmt of FORMAT_PRIORITY) { const g = groups[fmt]; if (g && g.length > 0) { result.push(g.shift()!); added = true; } } }
-  return result;
-}
 
-export async function buildFeed(topics: string[], youtubeApiKey?: string, lang = 'en', region = 'US', xBearerToken?: string) {
+export async function buildFeed(topics: string[], youtubeApiKey?: string, lang = 'en', region = 'US', xBearerToken?: string, seenIds: string[] = []) {
   const tasks: Promise<Item[]>[] = [];
+  const seenSet = new Set(seenIds);
 
-  // Fetch X trending topics for the user's region — use matching ones as extra YouTube queries
+  // Fetch X trending topics for display in the trending bar
   const trends = await xTrends(region);
-  const topicLower = topics.map((t) => t.toLowerCase());
-  // Find trends that match user's topics (e.g. 'AI' trend matches 'ai' topic)
-  // Match trends to user topics using word boundaries (avoid "Caine" matching "ai")
-  const matchingTrends = trends.filter((tr) => {
-    const trLower = tr.toLowerCase();
-    return topicLower.some((t) => {
-      const re = new RegExp('\\b' + t.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
-      return re.test(trLower);
-    });
-  }).slice(0, 3);
 
   for (const topic of topics) {
-    const q = Q[topic] ?? { m: [topic], y: [topic] };
-    q.m.forEach((tag) => tasks.push(mastodonTag(tag, topic, lang)));
-    q.y.forEach((y) => tasks.push(youtubeQuery(y, topic, youtubeApiKey, lang, region)));
-    // X/Twitter: try v2 search first (proper API), fall back to curated accounts (guest token)
+    // YouTube: search using the topic name (or Q map expansions for better results)
+    const q = Q[topic];
+    const ytQueries = q?.y ?? [topic];
+    ytQueries.forEach((y) => tasks.push(youtubeQuery(y, topic, youtubeApiKey, lang, region)));
+    // X/Twitter: search for the exact topic using v2 API, fall back to curated accounts
     if (xBearerToken) {
       tasks.push(xSearchTweets(topic, xBearerToken, lang).then((items) => items.length ? items : xTopicTweets(topic, lang)));
     } else {
       tasks.push(xTopicTweets(topic, lang));
     }
-    // Use X trending topics matching this topic as extra YouTube queries
-    for (const trend of matchingTrends) {
-      tasks.push(youtubeQuery(trend, topic, youtubeApiKey, lang, region));
-    }
   }
   const results = await Promise.allSettled(tasks);
-  const seen = new Set<string>(); const items: Item[] = [];
-  for (const r of results) { if (r.status === 'fulfilled') for (const it of r.value) if (!seen.has(it.id)) { seen.add(it.id); items.push(it); } }
-  const textItems = items.filter((it) => it.format === 'text').sort((a, b) => engagementScore(b) - engagementScore(a)).slice(0, 15);
-  const mediaItems = items.filter((it) => it.format !== 'text');
-  const mixed = interleaveByFormat([...mediaItems, ...textItems]);
-  return { items: mixed, count: mixed.length, trends, matchingTrends };
+
+  // Deduplicate and filter out already-seen posts
+  const dedup = new Set<string>(); const items: Item[] = [];
+  for (const r of results) {
+    if (r.status === 'fulfilled') for (const it of r.value) {
+      if (dedup.has(it.id) || seenSet.has(it.id)) continue;
+      dedup.add(it.id); items.push(it);
+    }
+  }
+
+  // Rank by combined score: log-scale engagement (50%) + recency (50%)
+  // Log scale balances YouTube (millions of views) vs X (tens of likes)
+  // Recency score: 1.0 at 0h, decays to 0.1 at 168h (7 days)
+  const recencyScore = (ageH: number) => Math.max(0.1, 1.0 - (ageH / 168) * 0.9);
+  const logEngagement = (it: Item) => Math.log10(engagementScore(it) + 1);
+  const maxLogEng = Math.max(0.1, ...items.map(logEngagement));
+  const combinedScore = (it: Item) =>
+    0.5 * (logEngagement(it) / maxLogEng) + 0.5 * recencyScore(it.ageHours);
+
+  // Sort all items by combined score (most relevant + popular + recent first)
+  items.sort((a, b) => combinedScore(b) - combinedScore(a));
+
+  return { items, count: items.length, trends, matchingTrends: [] };
 }

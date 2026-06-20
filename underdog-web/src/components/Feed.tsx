@@ -27,7 +27,7 @@ const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h
 const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, trends } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, trends, markSeen } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
   const [shareFor, setShareFor] = useState<RankedPost | null>(null);
@@ -66,6 +66,13 @@ export function Feed() {
     const i = Math.round(el.scrollTop / el.clientHeight);
     if (i !== idx && i >= 0 && i < ranked.length) setIdx(i);
   };
+
+  // Mark posts as seen when the user scrolls past them (idx advances)
+  useEffect(() => {
+    if (idx > 0 && ranked[idx - 1]) {
+      markSeen([ranked[idx - 1].post.id]);
+    }
+  }, [idx, ranked, markSeen]);
 
   return (
     <div className="feed-wrap">
