@@ -2,6 +2,7 @@ import type { Post, User } from './types';
 import { POST_IMAGE } from './postImages';
 
 export const TOPICS = [
+  { id: 'emerging-tech', label: 'Emerging Tech', icon: 'rocket', color: '#FF0000' },
   { id: 'music', label: 'Music', icon: 'musical-notes', color: '#FF0000' },
   { id: 'comedy', label: 'Comedy', icon: 'happy', color: '#990000' },
   { id: 'art', label: 'Art', icon: 'color-palette', color: '#FF0000' },

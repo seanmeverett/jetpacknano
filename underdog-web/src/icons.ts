@@ -15,6 +15,7 @@ export const TOPIC_ICONS: Record<string, any> = {
   tech: IoHardwareChipOutline, travel: IoAirplaneOutline, gaming: IoGameControllerOutline,
   books: IoBookOutline, fashion: IoShirtOutline, science: IoFlaskOutline, pets: IoPawOutline,
   diy: IoConstructOutline,
+  'emerging-tech': IoRocketOutline,
 };
 export {
   IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline, IoHeart, IoHeartOutline,

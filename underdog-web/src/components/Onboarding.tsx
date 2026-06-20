@@ -5,7 +5,7 @@ import { TOPIC_ICONS, IoCheckmark, IoArrowForwardOutline, IoClose, IoCheckmarkCi
 
 export function Onboarding() {
   const { finishOnboarding, prefetchFeed } = useApp();
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>(['emerging-tech']);
   const [lang, setLang] = useState('en');
   const [region, setRegion] = useState('US');
   const [customInput, setCustomInput] = useState('');

@@ -64,9 +64,21 @@ const X_ACCOUNTS: Record<string, { s: string; id: string }[]> = {
   fashion: [
     { s: 'VogueMagazine', id: '136361303' }, { s: 'GQMagazine', id: '21701757' },
   ],
+  bitcoin: [
+    { s: 'CoinDesk', id: '15201158' }, { s: 'BitcoinMagazine', id: '87671029' },
+  ],
+  'space tech': [
+    { s: 'SpaceX', id: '59096562' }, { s: 'NASA', id: '11348282' },
+  ],
+  'spatial computing': [
+    { s: 'uploadvr', id: '24738671' },
+  ],
+  'augmented reality': [
+    { s: 'MagicLeap', id: '19102735' },
+  ],
 };
 
-const Q: Record<string, { m: string[]; y: string[] }> = {
+const Q: Record<string, { m?: string[]; y: string[] }> = {
   music: { m: ['music', 'nowplaying'], y: ['music', 'music video'] },
   comedy: { m: ['comedy', 'funny'], y: ['comedy', 'funny clips'] },
   art: { m: ['art', 'illustration'], y: ['art', 'art process'] },
@@ -84,6 +96,15 @@ const Q: Record<string, { m: string[]; y: string[] }> = {
   ai: { m: ['ai', 'artificialintelligence'], y: ['AI', 'artificial intelligence', 'machine learning'] },
   'artificial intelligence': { m: ['ai', 'artificialintelligence'], y: ['AI', 'artificial intelligence', 'machine learning'] },
   'machine learning': { m: ['machinelearning'], y: ['machine learning', 'ML tutorial'] },
+  bitcoin: { y: ['bitcoin', 'cryptocurrency', 'crypto news'] },
+  'spatial computing': { y: ['spatial computing', 'Apple Vision Pro', 'mixed reality'] },
+  'augmented reality': { y: ['augmented reality', 'AR glasses', 'AR headset'] },
+  'space tech': { y: ['space tech', 'SpaceX', 'space exploration'] },
+};
+
+// Parent category → sub-topic search terms (used for both YouTube and X)
+const SUBTOPICS: Record<string, string[]> = {
+  'emerging-tech': ['artificial intelligence', 'bitcoin', 'spatial computing', 'augmented reality', 'space tech'],
 };
 
 
@@ -383,7 +404,15 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
   const tasks: Promise<Item[]>[] = [];
   const seenSet = new Set(seenIds);
 
+  // Expand parent categories (e.g. "emerging-tech") into their sub-topics
+  const expandedTopics: string[] = [];
   for (const topic of topics) {
+    const subs = SUBTOPICS[topic];
+    if (subs) expandedTopics.push(...subs);
+    else expandedTopics.push(topic);
+  }
+
+  for (const topic of expandedTopics) {
     // YouTube: search using the topic name (or Q map expansions for better results)
     const q = Q[topic];
     const ytQueries = q?.y ?? [topic];
