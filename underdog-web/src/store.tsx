@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { ViewerPrefs, RankOptions, FeedMode, Post } from './types';
 import { TOPICS } from './seed';
 import { loadUsers, loadComments, fetchLiveFeed, liveToPosts } from './api';
@@ -99,6 +99,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [seenIds, setSeenIds] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('jetpacknano_seen') || '[]'); } catch { return []; }
   });
+  const seenIdsRef = useRef(seenIds);
+  useEffect(() => { seenIdsRef.current = seenIds; }, [seenIds]);
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
@@ -141,18 +143,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
 
   const prefetchFeed = useCallback((topics: string[], lang = 'en', region = 'US') => {
-    fetchLiveFeed(topics, lang, region, seenIds).then((res) => {
-      if (!res.items.length) return;
-      const { posts: lp, users: lu } = liveToPosts(res.items);
+    const currentSeen = seenIdsRef.current;
+    const seenSet = new Set(currentSeen);
+    fetchLiveFeed(topics, lang, region, currentSeen).then((res) => {
+      const filtered = res.items.filter((it) => !seenSet.has(it.id));
+      if (!filtered.length) return;
+      const { posts: lp, users: lu } = liveToPosts(filtered);
       setPrefetched({ posts: lp, users: lu });
       if (res.trends?.length) setTrends(res.trends);
     }).catch(() => {});
   }, []);
 
   const refreshLive = useCallback((topics: string[], lang = 'en', region = 'US') => {
-    fetchLiveFeed(topics, lang, region, seenIds).then((res) => {
-      if (!res.items.length) return;
-      const { posts: lp, users: lu } = liveToPosts(res.items);
+    const currentSeen = seenIdsRef.current;
+    const seenSet = new Set(currentSeen);
+    fetchLiveFeed(topics, lang, region, currentSeen).then((res) => {
+      const filtered = res.items.filter((it) => !seenSet.has(it.id));
+      if (!filtered.length) return;
+      const { posts: lp, users: lu } = liveToPosts(filtered);
       setPosts(lp);
       setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
       if (res.trends?.length) setTrends(res.trends);
@@ -168,7 +176,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setScreen('feed');
     setTopicOrder(interests as string[]);
     // Use prefetched content if available (started during onboarding) for instant load
-    if (prefetched) {
+    if (prefetched && prefetched.posts.length) {
       setPosts(prefetched.posts);
       setUsersMap((m) => { const n = { ...m }; for (const u of prefetched.users) n[u.id] = u; return n; });
     }

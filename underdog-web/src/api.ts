@@ -20,7 +20,8 @@ export interface FeedResult { items: LiveItem[]; trends: string[]; matchingTrend
 export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US', seenIds: string[] = []): Promise<FeedResult> {
   try {
     const params = new URLSearchParams({ topics: topics.join(','), lang, region });
-    if (seenIds.length) params.set('seen', seenIds.join(','));
+    // Limit to last 100 seen IDs to avoid URL length limits
+    if (seenIds.length) params.set('seen', seenIds.slice(-100).join(','));
     const r = await fetch('/api/feed?' + params.toString());
     if (!r.ok) return { items: [], trends: [], matchingTrends: [] };
     const j = await r.json();
