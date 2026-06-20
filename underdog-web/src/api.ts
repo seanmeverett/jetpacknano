@@ -21,7 +21,7 @@ export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US'
   try {
     const params = new URLSearchParams({ topics: topics.join(','), lang, region });
     // Limit to last 100 seen IDs to avoid URL length limits
-    if (seenIds.length) params.set('seen', seenIds.slice(-100).join(','));
+    if (seenIds.length) params.set('seen', seenIds.slice(-200).join(','));
     const r = await fetch('/api/feed?' + params.toString());
     if (!r.ok) return { items: [] };
     const j = await r.json();
