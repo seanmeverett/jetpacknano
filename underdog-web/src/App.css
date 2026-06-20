@@ -251,7 +251,7 @@ a.name:hover { text-decoration: underline; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Loading screen icon — larger brand icon with slow pulse */
-.loading-icon { display:block; width:56px; height:40px; background:var(--brand); margin-bottom:24px;
+.loading-icon { display:block; width:56px; height:40px; background:var(--brand); margin:0 auto 24px;
   -webkit-mask:url('/jetpack-icon.svg') no-repeat center/contain; mask:url('/jetpack-icon.svg') no-repeat center/contain;
-  animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.9); } }
+  animation: pulse 3.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.88); } }
