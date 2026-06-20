@@ -115,7 +115,10 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
   const freshFace = creator.followers < 100;
   const lastTap = useRef(0);
   const [burst, setBurst] = useState(false);
+  const [paused, setPaused] = useState(false);
   const ytRef = useRef<HTMLIFrameElement>(null);
+  const vidRef = useRef<HTMLVideoElement>(null);
+  const isVideo = !!(post.embedUrl) || !!(post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl));
 
   // Control YouTube iframe mute via postMessage (no reload needed)
   useEffect(() => {
@@ -124,10 +127,35 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
     ytRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: cmd, args: '' }), '*');
   }, [cardMuted, post.embedUrl]);
 
+  const togglePlayPause = () => {
+    setPaused((p) => {
+      const next = !p;
+      if (post.embedUrl && ytRef.current) {
+        ytRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: next ? 'pauseVideo' : 'playVideo', args: '' }), '*');
+      } else if (vidRef.current) {
+        if (next) vidRef.current.pause(); else vidRef.current.play().catch(() => {});
+      }
+      return next;
+    });
+  };
+
   const tapBg = () => {
     const now = Date.now();
-    if (now - lastTap.current < 280) { if (!liked) onLike(); setBurst(true); setTimeout(() => setBurst(false), 420); }
-    else lastTap.current = now;
+    if (now - lastTap.current < 280) {
+      // Double tap → like (undo any pause triggered by first tap)
+      lastTap.current = 0;
+      if (paused) { setPaused(false); if (vidRef.current) vidRef.current.play().catch(() => {});
+        if (ytRef.current) ytRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*'); }
+      if (!liked) onLike();
+      setBurst(true);
+      setTimeout(() => setBurst(false), 420);
+    } else {
+      // Single tap → wait to see if a double tap follows
+      lastTap.current = now;
+      setTimeout(() => {
+        if (lastTap.current === now && isVideo) togglePlayPause();
+      }, 300);
+    }
   };
 
   return (
@@ -141,13 +169,14 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         : post.media && post.media.length > 1
         ? <StoryView images={post.media} alt={post.caption} />
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
-        ? (active ? <video className="card-bg" src={post.imageUrl} autoPlay loop muted={cardMuted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
+        ? (active ? <video ref={vidRef} className="card-bg" src={post.imageUrl} autoPlay loop muted={cardMuted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
         : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : <div className="text-center"><p className="text-body"><LinkText text={post.caption} /></p></div>}
       {(post.imageUrl || post.media || post.embedUrl || post.audio || post.tiktokUrl) && <div className="tap-layer" onClick={tapBg} />}
       <div className="grad-top" />
       <div className="media-badge">{(() => { const fi = formatInfo(post); return <><fi.Icon size={14} /> <span>{fi.fmt}</span></>; })()}</div>
       <div className="grad-bottom" />
       {burst && <div className="burst"><IoHeart size={92} color="var(--brand2)" /></div>}
+      {paused && isVideo && <div className="pause-overlay"><IoPlayCircleOutline size={72} color="rgba(255,255,255,0.85)" /></div>}
 
       <div className="rail">
         {hasControllableAudio(post) && <button className="rail-btn vol-btn" onClick={onToggleMute}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>}

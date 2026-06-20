@@ -226,3 +226,7 @@ input[type=range].good { accent-color:var(--good); }
 .lang-select, .region-select { flex: 1; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 15px; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23FF0000' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
 .lang-select:focus, .region-select:focus { border-color: var(--brand); }
 .lang-select option, .region-select option { background: #1a0000; color: var(--text); }
+
+/* Pause/play overlay for videos */
+.pause-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; pointer-events:none; background:rgba(0,0,0,0.25); }
+.pause-overlay svg { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6)); }
