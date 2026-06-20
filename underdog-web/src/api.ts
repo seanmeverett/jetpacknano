@@ -12,7 +12,7 @@ export interface LiveItem {
   id: string; topic: string; type: 'video' | 'image' | 'text' | 'story' | 'audio';
   title: string; author: string; community: string;
   media?: string[]; audio?: string; duration?: number; format: string; permalink: string; likes: number; comments: number; ageHours: number;
-  embedUrl?: string; provider?: string; thumb?: string;
+  embedUrl?: string; provider?: string; thumb?: string; followers?: number;
 }
 
 export interface FeedResult { items: LiveItem[]; }
@@ -35,7 +35,7 @@ export function liveToPosts(items: LiveItem[]): { posts: Post[]; users: User[] }
   const users: User[] = []; const uids = new Set<string>();
   const posts: Post[] = items.map((it) => {
     const uid = 'live_' + sanitize(it.author);
-    if (!uids.has(uid)) { uids.add(uid); users.push({ id: uid, name: it.author, handle: it.author.replace(/^(u\/|@)/, ''), followers: 0, verified: false, joinedDaysAgo: 0 }); }
+    if (!uids.has(uid)) { uids.add(uid); users.push({ id: uid, name: it.author, handle: it.author.replace(/^(u\/|@)/, ''), followers: it.followers || 0, verified: false, joinedDaysAgo: 0 }); }
     return {
       id: it.id, creatorId: uid, topic: it.topic as any,
       kind: it.embedUrl ? 'video' : it.type === 'video' ? 'video' : it.type === 'audio' ? 'audio' : it.type === 'text' ? 'text' : 'image',

@@ -3,7 +3,7 @@ export type Item = {
   format: string; title: string; author: string; community: string;
   media?: string[]; audio?: string; duration?: number;
   permalink: string; likes: number; comments: number; ageHours: number;
-  embedUrl?: string; provider?: string; thumb?: string;
+  embedUrl?: string; provider?: string; thumb?: string; followers?: number;
 };
 
 const UA = 'JetpackNano/1.0 (https://github.com/seanmeverett/jetpacknano)';
@@ -145,7 +145,9 @@ async function youtubeOfficial(q: string, topic: string, apiKey: string, lang = 
     const dr = await fetch(detailsUrl, { headers: { 'Referer': REFERER } });
     const dj: any = dr.ok ? await dr.json() : { items: [] };
     const detailsMap: Record<string, any> = {};
-    for (const v of dj.items || []) detailsMap[v.id] = v;
+    const channelIds: string[] = [];
+    for (const v of dj.items || []) { detailsMap[v.id] = v; const cid = v.snippet?.channelId; if (cid) channelIds.push(cid); }
+    const subsMap = await youtubeChannelStats(channelIds, apiKey);
 
     return (sj.items || []).map((v: any) => {
       const vid = v.id?.videoId;
@@ -172,9 +174,43 @@ async function youtubeOfficial(q: string, topic: string, apiKey: string, lang = 
         ageHours: publishedAt ? Math.max(0, (Date.now() - new Date(publishedAt).getTime()) / 3600000) : 0,
         duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube',
         thumb: (ds.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`),
+        followers: subsMap[ds.channelId || v.snippet?.channelId || ''] || 0,
       };
     }).filter(Boolean);
   } catch { return []; }
+}
+
+// Batch-fetch YouTube channel subscriber counts (official API)
+async function youtubeChannelStats(channelIds: string[], apiKey: string): Promise<Record<string, number>> {
+  if (!channelIds.length || !apiKey) return {};
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${[...new Set(channelIds)].slice(0, 50).join(',')}&key=${apiKey}`;
+    const r = await fetch(url, { headers: { 'Referer': REFERER } });
+    if (!r.ok) return {};
+    const j = await r.json() as any;
+    const map: Record<string, number> = {};
+    for (const ch of j.items || []) map[ch.id] = parseInt(ch.statistics?.subscriberCount || '0');
+    return map;
+  } catch { return {}; }
+}
+
+// Batch-fetch subscriber counts from Piped channel endpoints
+async function pipedChannelStats(channelIds: string[]): Promise<Record<string, number>> {
+  const unique = [...new Set(channelIds)].slice(0, 15);
+  const entries = await Promise.allSettled(unique.map(async (cid) => {
+    for (const inst of PIPED) {
+      try {
+        const r = await fetch(`https://${inst}/channel/${cid}`, { headers: { 'User-Agent': UA } });
+        if (!r.ok) continue;
+        const j = await r.json() as any;
+        if (j.subscriberCount != null) return [cid, j.subscriberCount] as [string, number];
+      } catch {}
+    }
+    return [cid, 0] as [string, number];
+  }));
+  const map: Record<string, number> = {};
+  for (const r of entries) if (r.status === 'fulfilled') map[r.value[0]] = r.value[1];
+  return map;
 }
 
 async function youtubePiped(q: string, topic: string): Promise<Item[]> {
@@ -183,11 +219,20 @@ async function youtubePiped(q: string, topic: string): Promise<Item[]> {
       const r = await fetch(`https://${inst}/search?q=${encodeURIComponent(q)}&filter=videos`, { headers: { 'User-Agent': UA } });
       if (!r.ok) continue;
       const j: any = await r.json();
-      const out: Item[] = (j.items ?? []).map((v: any) => {
+      // Collect channel IDs for subscriber count lookup
+      const channelIds: string[] = [];
+      const raw = (j.items ?? []).map((v: any) => {
         const vid = (v.url || '').match(/v=([\w-]{6,})/)?.[1];
         if (!vid) return null;
         const dur = typeof v.duration === 'number' ? v.duration : undefined;
-        return { id: 'yt_' + vid, topic, type: 'video' as const, format: dur != null ? (dur <= 60 ? 'short video' : 'long video') : 'video', title: v.title || '(untitled)', author: v.uploader || 'YouTube', community: 'youtube.com', permalink: 'https://www.youtube.com/watch?v=' + vid, likes: v.views || 0, comments: 0, ageHours: v.uploaded ? Math.max(0, (Date.now() - v.uploaded) / 3600000) : 0, duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube', thumb: 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg' };
+        const cid = (v.uploaderUrl || '').match(/\/channel\/([\w-]+)/)?.[1] || '';
+        if (cid) channelIds.push(cid);
+        return { vid, dur, v, cid };
+      }).filter(Boolean);
+      // Fetch subscriber counts
+      const subsMap = await pipedChannelStats(channelIds);
+      const out: Item[] = raw.map((r: any) => { const vid = r.vid, dur = r.dur, v = r.v, cid = r.cid;
+        return { id: 'yt_' + vid, topic, type: 'video' as const, format: dur != null ? (dur <= 60 ? 'short video' : 'long video') : 'video', title: v.title || '(untitled)', author: v.uploaderName || 'YouTube', community: 'youtube.com', permalink: 'https://www.youtube.com/watch?v=' + vid, likes: v.views || 0, comments: 0, ageHours: v.uploaded ? Math.max(0, (Date.now() - v.uploaded) / 3600000) : 0, duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube', thumb: 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg', followers: subsMap[cid] || 0 };
       }).filter((it: Item) => it.ageHours < 96).filter(Boolean);
       if (out.length) return out;
     } catch {}
@@ -285,6 +330,7 @@ async function xUserTweets(userId: string, screenName: string, topic: string, la
       const created = leg.created_at ? new Date(leg.created_at).getTime() : Date.now();
       const ageH = Math.max(0, (Date.now() - created) / 3600000);
       if (ageH > 720) continue; // skip tweets older than 30 days
+      const userFollowers = tw.core?.user_results?.result?.legacy?.followers_count || 0;
       items.push({
         id: 'x_' + tid, topic, type, format,
         title: text.slice(0, 500),
@@ -293,6 +339,7 @@ async function xUserTweets(userId: string, screenName: string, topic: string, la
         likes: leg.favorite_count || 0, comments: leg.reply_count || 0,
         ageHours: ageH,
         media: media.length ? media : undefined, thumb, provider: 'x',
+        followers: userFollowers,
       });
     }
     return items;
@@ -336,7 +383,7 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
   try {
     // Search X for the exact topic the user entered — no extra keywords
     const query = encodeURIComponent(`${topic} -is:retweet lang:${lang} min_faves:10`);
-    const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=50&sort_order=relevancy&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url&media.fields=url,preview_image_url,type,duration_ms`;
+    const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=50&sort_order=relevancy&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url,public_metrics&media.fields=url,preview_image_url,type,duration_ms`;
 
     const r = await fetch(url, {
       headers: { 'Authorization': `Bearer ${bearerToken}`, 'User-Agent': UA },
@@ -361,6 +408,7 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
 
       const user = users[tw.author_id] || {};
       const metrics = tw.public_metrics || {};
+      const userMetrics = user.public_metrics || {};
       const created = tw.created_at ? new Date(tw.created_at).getTime() : Date.now();
 
       // Parse media attachments
@@ -389,6 +437,7 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
         ageHours: Math.max(0, (Date.now() - created) / 3600000),
         media: media.length ? media : undefined,
         thumb, provider: 'x',
+        followers: userMetrics.followers_count || 0,
       });
     }
     // Sort by engagement (likes + replies*3 + retweets*2)
