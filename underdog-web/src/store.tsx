@@ -83,6 +83,8 @@ const loadPersisted = (): Partial<Persisted> => getCookie<Partial<Persisted>>(CO
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const saved = loadPersisted();
   // Onboarding always shows on refresh — user picks topics/lang/region each visit
+  // Clear stale feed cache on every load so old content doesn't interfere
+  try { localStorage.removeItem('jetpacknano_feed_cache'); } catch {}
   const [onboardingDone, setOnboardingDone] = useState<boolean>(false);
   const [screen, setScreen] = useState<'onboarding' | 'feed' | 'settings'>('onboarding');
   const [prefs, setPrefs] = useState<ViewerPrefs>(
@@ -113,18 +115,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once on mount only
 
-  // Instant load from localStorage cache (returning users see content immediately)
-  // Cache version invalidates old caches when feed sources change; TTL=5min for freshness
-  useEffect(() => {
-    if (!saved.onboardingDone) return;
-    try {
-      const cached = JSON.parse(localStorage.getItem('jetpacknano_feed_cache') || 'null');
-      if (cached && cached.v === 2 && cached.posts?.length && Date.now() - cached.ts < 5 * 60 * 1000) {
-        setPosts(cached.posts);
-        setUsersMap((m) => { const n = { ...m }; for (const u of cached.users || []) n[u.id] = u; return n; });
-      }
-    } catch {}
-  }, []);
+  // Cache is cleared on every load (above) — no instant-load from stale cache
   useEffect(() => { let live = true; loadComments().then((m) => { if (live) setSeedComments(m); }).catch(() => {}); return () => { live = false; }; }, []);
   useEffect(() => { let live = true; loadUsers().then((m) => { if (live) setUsersMap(m); }).catch(() => {}); return () => { live = false; }; }, []);
 
@@ -168,6 +159,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const finishOnboarding = useCallback((interests: TopicId[], lang = 'en', region = 'US') => {
+    // Clear seenIds on new onboarding so previous session's seen posts don't block new topics
+    setSeenIds([]);
+    try { localStorage.removeItem('jetpacknano_seen'); } catch {}
+    seenIdsRef.current = [];
     setPrefs({
       interests: { ...emptyInterests(), ...Object.fromEntries(interests.map((t) => [t, 1])) } as ViewerPrefs['interests'],
       lang, region,
@@ -180,9 +175,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setPosts(prefetched.posts);
       setUsersMap((m) => { const n = { ...m }; for (const u of prefetched.users) n[u.id] = u; return n; });
     }
-    // Always refresh in background for fresh content
-    refreshLive(interests as unknown as string[], lang, region);
-  }, [refreshLive, prefetched]);
+    // Always refresh in background for fresh content — retry if empty
+    const doRefresh = (attempt = 0) => {
+      fetchLiveFeed(interests as unknown as string[], lang, region, []).then((res) => {
+        if (res.items.length) {
+          const { posts: lp, users: lu } = liveToPosts(res.items);
+          setPosts(lp);
+          setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
+          if (res.trends?.length) setTrends(res.trends);
+        } else if (attempt < 2) {
+          setTimeout(() => doRefresh(attempt + 1), 3000);
+        }
+      }).catch(() => { if (attempt < 2) setTimeout(() => doRefresh(attempt + 1), 3000); });
+    };
+    doRefresh();
+  }, [prefetched]);
 
   const toggleInterest = useCallback((t: TopicId, on: boolean) => {
     setPrefs((p) => ({ ...p, interests: { ...p.interests, [t]: on ? 1 : 0 } as ViewerPrefs['interests'] }));

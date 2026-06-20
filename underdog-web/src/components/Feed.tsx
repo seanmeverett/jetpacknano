@@ -50,6 +50,14 @@ export function Feed() {
     if (idx >= 0) scroller.current.scrollTo({ top: idx * scroller.current.clientHeight, behavior: 'auto' });
   }, [ranked]);
 
+  // Mark posts as seen when the user scrolls past them (idx advances)
+  // MUST be before any early return — React hooks can't be conditional
+  useEffect(() => {
+    if (idx > 0 && ranked[idx - 1]) {
+      markSeen([ranked[idx - 1].post.id]);
+    }
+  }, [idx, ranked, markSeen]);
+
   if (posts.length === 0) {
     return (
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -66,13 +74,6 @@ export function Feed() {
     const i = Math.round(el.scrollTop / el.clientHeight);
     if (i !== idx && i >= 0 && i < ranked.length) setIdx(i);
   };
-
-  // Mark posts as seen when the user scrolls past them (idx advances)
-  useEffect(() => {
-    if (idx > 0 && ranked[idx - 1]) {
-      markSeen([ranked[idx - 1].post.id]);
-    }
-  }, [idx, ranked, markSeen]);
 
   return (
     <div className="feed-wrap">
