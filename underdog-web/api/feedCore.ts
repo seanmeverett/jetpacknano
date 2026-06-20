@@ -93,13 +93,13 @@ const Q: Record<string, { m?: string[]; y: string[] }> = {
   science: { m: ['science', 'scicomm'], y: ['science', 'science news'] },
   pets: { m: ['pets', 'cats'], y: ['pets', 'cute animals'] },
   diy: { m: ['diy', 'maker'], y: ['diy', 'diy projects'] },
-  ai: { m: ['ai', 'artificialintelligence'], y: ['AI', 'artificial intelligence', 'machine learning'] },
-  'artificial intelligence': { m: ['ai', 'artificialintelligence'], y: ['AI', 'artificial intelligence', 'machine learning'] },
-  'machine learning': { m: ['machinelearning'], y: ['machine learning', 'ML tutorial'] },
-  bitcoin: { y: ['bitcoin', 'cryptocurrency', 'crypto news'] },
-  'spatial computing': { y: ['spatial computing', 'Apple Vision Pro', 'mixed reality'] },
-  'augmented reality': { y: ['augmented reality', 'AR glasses', 'AR headset'] },
-  'space tech': { y: ['space tech', 'SpaceX', 'space exploration'] },
+  ai: { y: ['artificial intelligence'] },
+  'artificial intelligence': { y: ['artificial intelligence'] },
+  'machine learning': { y: ['machine learning'] },
+  bitcoin: { y: ['bitcoin'] },
+  'spatial computing': { y: ['spatial computing'] },
+  'augmented reality': { y: ['augmented reality'] },
+  'space tech': { y: ['space tech'] },
 };
 
 // Parent category → sub-topic search terms (used for both YouTube and X)
@@ -482,6 +482,7 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
       if (dedup.has(it.id) || seenSet.has(it.id)) continue;
       if (it.ageHours > 96) continue; // drop content older than 4 days
       if (it.likes <= 0) continue; // only content with real engagement
+      if (it.provider === 'youtube' && (!it.followers || it.followers <= 0)) continue; // drop YT channels without subscriber data
       dedup.add(it.id); items.push(it);
     }
   }
