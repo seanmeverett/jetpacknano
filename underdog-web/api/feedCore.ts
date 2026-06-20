@@ -133,7 +133,7 @@ const parseDuration = (iso: string): number => {
 // Official YouTube Data API v3 — trending (viewCount), English-only, 7-day window
 async function youtubeOfficial(q: string, topic: string, apiKey: string, lang = 'en', region = 'US'): Promise<Item[]> {
   try {
-    const publishedAfter = new Date(Date.now() - 7 * 86400000).toISOString();
+    const publishedAfter = new Date(Date.now() - 4 * 86400000).toISOString();
     const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=relevance&maxResults=25&relevanceLanguage=${lang}&regionCode=${region}&publishedAfter=${publishedAfter}&key=${apiKey}`;
     const sr = await fetch(searchUrl, { headers: { 'Referer': REFERER } });
     if (!sr.ok) return [];
@@ -188,7 +188,7 @@ async function youtubePiped(q: string, topic: string): Promise<Item[]> {
         if (!vid) return null;
         const dur = typeof v.duration === 'number' ? v.duration : undefined;
         return { id: 'yt_' + vid, topic, type: 'video' as const, format: dur != null ? (dur <= 60 ? 'short video' : 'long video') : 'video', title: v.title || '(untitled)', author: v.uploader || 'YouTube', community: 'youtube.com', permalink: 'https://www.youtube.com/watch?v=' + vid, likes: v.views || 0, comments: 0, ageHours: v.uploaded ? Math.max(0, (Date.now() - v.uploaded) / 3600000) : 0, duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube', thumb: 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg' };
-      }).filter((it: Item) => it.ageHours < 168).filter(Boolean);
+      }).filter((it: Item) => it.ageHours < 96).filter(Boolean);
       if (out.length) return out;
     } catch {}
   }
@@ -335,7 +335,7 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
   if (!bearerToken) return [];
   try {
     // Search X for the exact topic the user entered — no extra keywords
-    const query = encodeURIComponent(`${topic} -is:retweet lang:${lang}`);
+    const query = encodeURIComponent(`${topic} -is:retweet lang:${lang} min_faves:10`);
     const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=50&sort_order=relevancy&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url&media.fields=url,preview_image_url,type,duration_ms`;
 
     const r = await fetch(url, {
@@ -431,7 +431,8 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
   for (const r of results) {
     if (r.status === 'fulfilled') for (const it of r.value) {
       if (dedup.has(it.id) || seenSet.has(it.id)) continue;
-      if (it.likes <= 0 && it.comments <= 0) continue; // only content with engagement
+      if (it.ageHours > 96) continue; // drop content older than 4 days
+      if (it.likes <= 0) continue; // only content with real engagement
       dedup.add(it.id); items.push(it);
     }
   }
@@ -439,7 +440,7 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
   // Rank by combined score: log-scale engagement (50%) + recency (50%)
   // Log scale balances YouTube (millions of views) vs X (tens of likes)
   // Recency score: 1.0 at 0h, decays to 0.1 at 168h (7 days)
-  const recencyScore = (ageH: number) => Math.max(0.1, 1.0 - (ageH / 168) * 0.9);
+  const recencyScore = (ageH: number) => Math.max(0.1, 1.0 - (ageH / 96) * 0.9);
   const logEngagement = (it: Item) => Math.log10(engagementScore(it) + 1);
   const maxLogEng = Math.max(0.1, ...items.map(logEngagement));
   const combinedScore = (it: Item) =>
