@@ -15,14 +15,16 @@ export interface LiveItem {
   embedUrl?: string; provider?: string; thumb?: string;
 }
 
-export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US'): Promise<LiveItem[]> {
+export interface FeedResult { items: LiveItem[]; trends: string[]; matchingTrends: string[]; }
+
+export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US'): Promise<FeedResult> {
   try {
     const params = new URLSearchParams({ topics: topics.join(','), lang, region });
     const r = await fetch('/api/feed?' + params.toString());
-    if (!r.ok) return [];
+    if (!r.ok) return { items: [], trends: [], matchingTrends: [] };
     const j = await r.json();
-    return (j.items || []) as LiveItem[];
-  } catch { return []; }
+    return { items: (j.items || []) as LiveItem[], trends: j.trends || [], matchingTrends: j.matchingTrends || [] };
+  } catch { return { items: [], trends: [], matchingTrends: [] }; }
 }
 
 const sanitize = (s: string) => s.replace(/[^a-z0-9_]/gi, '').slice(0, 40);

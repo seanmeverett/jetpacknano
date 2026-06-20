@@ -30,6 +30,30 @@ const X_FEATURES = encodeURIComponent(JSON.stringify({
   responsive_web_enhance_cards_enabled: true,
 }));
 
+
+// WOEID mapping for X trends API (region → Where On Earth ID)
+const WOEIDS: Record<string, number> = {
+  US: 23424977, GB: 23424975, CA: 23424748, DE: 23424829, FR: 23424819,
+  JP: 23424856, KR: 23424827, IN: 23424848, BR: 23424740, AU: 23424746,
+  ES: 23424950, IT: 23424853, MX: 23424901,
+};
+
+// Fetch trending topics from X v1.1 trends API (works with guest token)
+async function xTrends(region = 'US'): Promise<string[]> {
+  const woeid = WOEIDS[region] ?? 23424977; // default US
+  const gt = await getGuestToken();
+  if (!gt) return [];
+  try {
+    const r = await fetch(`https://api.twitter.com/1.1/trends/place.json?id=${woeid}`, {
+      headers: { 'Authorization': `Bearer ${X_BEARER}`, 'x-guest-token': gt, 'User-Agent': UA },
+    });
+    if (!r.ok) return [];
+    const j = await r.json() as any[];
+    const trends = (j[0]?.trends || []).map((t: any) => t.name.replace(/^#/, ''));
+    return trends;
+  } catch { return []; }
+}
+
 // Curated X accounts per topic: screen_name → user_id (pre-resolved to avoid extra API calls)
 const X_ACCOUNTS: Record<string, { s: string; id: string }[]> = {
   ai: [
@@ -345,11 +369,29 @@ function interleaveByFormat(items: Item[]): Item[] {
 
 export async function buildFeed(topics: string[], youtubeApiKey?: string, lang = 'en', region = 'US') {
   const tasks: Promise<Item[]>[] = [];
+
+  // Fetch X trending topics for the user's region — use matching ones as extra YouTube queries
+  const trends = await xTrends(region);
+  const topicLower = topics.map((t) => t.toLowerCase());
+  // Find trends that match user's topics (e.g. 'AI' trend matches 'ai' topic)
+  // Match trends to user topics using word boundaries (avoid "Caine" matching "ai")
+  const matchingTrends = trends.filter((tr) => {
+    const trLower = tr.toLowerCase();
+    return topicLower.some((t) => {
+      const re = new RegExp('\\b' + t.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+      return re.test(trLower);
+    });
+  }).slice(0, 3);
+
   for (const topic of topics) {
     const q = Q[topic] ?? { m: [topic], y: [topic] };
     q.m.forEach((tag) => tasks.push(mastodonTag(tag, topic, lang)));
     q.y.forEach((y) => tasks.push(youtubeQuery(y, topic, youtubeApiKey, lang, region)));
     tasks.push(xTopicTweets(topic, lang)); // X/Twitter curated accounts
+    // Use X trending topics matching this topic as extra YouTube queries
+    for (const trend of matchingTrends) {
+      tasks.push(youtubeQuery(trend, topic, youtubeApiKey, lang, region));
+    }
   }
   const results = await Promise.allSettled(tasks);
   const seen = new Set<string>(); const items: Item[] = [];
@@ -357,5 +399,5 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
   const textItems = items.filter((it) => it.format === 'text').sort((a, b) => engagementScore(b) - engagementScore(a)).slice(0, 15);
   const mediaItems = items.filter((it) => it.format !== 'text');
   const mixed = interleaveByFormat([...mediaItems, ...textItems]);
-  return { items: mixed, count: mixed.length };
+  return { items: mixed, count: mixed.length, trends, matchingTrends };
 }

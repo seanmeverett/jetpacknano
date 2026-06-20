@@ -230,3 +230,10 @@ input[type=range].good { accent-color:var(--good); }
 /* Pause/play overlay for videos */
 .pause-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; pointer-events:none; background:rgba(0,0,0,0.25); }
 .pause-overlay svg { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6)); }
+
+/* Trending on X bar */
+.trending-bar { display:flex; align-items:center; gap:8px; padding:6px 12px; background:rgba(89,0,0,0.4); border-top:1px solid rgba(255,0,0,0.15); border-bottom:1px solid rgba(255,0,0,0.15); overflow:hidden; }
+.trending-label { font-size:11px; font-weight:700; color:var(--brand2); white-space:nowrap; letter-spacing:0.3px; }
+.trending-scroll { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
+.trending-scroll::-webkit-scrollbar { display:none; }
+.trending-chip { font-size:12px; color:var(--text); background:rgba(255,255,255,0.08); padding:3px 10px; border-radius:20px; white-space:nowrap; }

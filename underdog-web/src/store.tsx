@@ -22,6 +22,7 @@ interface Persisted {
   comments: Record<string, Comment[]>;
   seedComments: Record<string, Comment[]>;
   topicOrder: string[];
+  trends: string[];
 }
 
 interface AppState {
@@ -52,6 +53,7 @@ interface AppState {
   addTopic: (topic: string) => void;
   removeTopic: (topic: string) => void;
   topicOrder: string[];
+  trends: string[];
   reorderTopics: (newOrder: string[]) => void;
   renameTopic: (oldName: string, newName: string) => void;
   reset: () => void;
@@ -89,6 +91,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]); // live-only, no stock seed
   const [prefetched, setPrefetched] = useState<{ posts: Post[]; users: import('./types').User[] } | null>(null);
   const [topicOrder, setTopicOrder] = useState<string[]>(saved.topicOrder ?? []);
+  const [trends, setTrends] = useState<string[]>([]);
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
@@ -131,19 +134,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
 
   const prefetchFeed = useCallback((topics: string[], lang = 'en', region = 'US') => {
-    fetchLiveFeed(topics, lang, region).then((items) => {
-      if (!items.length) return;
-      const { posts: lp, users: lu } = liveToPosts(items);
+    fetchLiveFeed(topics, lang, region).then((res) => {
+      if (!res.items.length) return;
+      const { posts: lp, users: lu } = liveToPosts(res.items);
       setPrefetched({ posts: lp, users: lu });
+      if (res.trends?.length) setTrends(res.trends);
     }).catch(() => {});
   }, []);
 
   const refreshLive = useCallback((topics: string[], lang = 'en', region = 'US') => {
-    fetchLiveFeed(topics, lang, region).then((items) => {
-      if (!items.length) return;
-      const { posts: lp, users: lu } = liveToPosts(items);
+    fetchLiveFeed(topics, lang, region).then((res) => {
+      if (!res.items.length) return;
+      const { posts: lp, users: lu } = liveToPosts(res.items);
       setPosts(lp);
       setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
+      if (res.trends?.length) setTrends(res.trends);
     }).catch(() => {});
   }, []);
 
@@ -254,9 +259,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, reorderTopics, renameTopic, prefetchFeed, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, trends, reorderTopics, renameTopic, prefetchFeed, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, trends, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
