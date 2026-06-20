@@ -3,7 +3,7 @@ export type Item = {
   format: string; title: string; author: string; community: string;
   media?: string[]; audio?: string; duration?: number;
   permalink: string; likes: number; comments: number; ageHours: number;
-  embedUrl?: string; provider?: string; thumb?: string; followers?: number;
+  embedUrl?: string; provider?: string; thumb?: string; followers?: number; authorUrl?: string;
 };
 
 const UA = 'JetpackNano/1.0 (https://github.com/seanmeverett/jetpacknano)';
@@ -175,6 +175,7 @@ async function youtubeOfficial(q: string, topic: string, apiKey: string, lang = 
         duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube',
         thumb: (ds.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`),
         followers: subsMap[ds.channelId || v.snippet?.channelId || ''] || 0,
+        authorUrl: `https://www.youtube.com/channel/${ds.channelId || v.snippet?.channelId || ''}`,
       };
     }).filter(Boolean);
   } catch { return []; }
@@ -227,12 +228,13 @@ async function youtubePiped(q: string, topic: string): Promise<Item[]> {
         const dur = typeof v.duration === 'number' ? v.duration : undefined;
         const cid = (v.uploaderUrl || '').match(/\/channel\/([\w-]+)/)?.[1] || '';
         if (cid) channelIds.push(cid);
-        return { vid, dur, v, cid };
+        const authorUrl = cid ? `https://www.youtube.com/channel/${cid}` : '';
+        return { vid, dur, v, cid, authorUrl };
       }).filter(Boolean);
       // Fetch subscriber counts
       const subsMap = await pipedChannelStats(channelIds);
-      const out: Item[] = raw.map((r: any) => { const vid = r.vid, dur = r.dur, v = r.v, cid = r.cid;
-        return { id: 'yt_' + vid, topic, type: 'video' as const, format: dur != null ? (dur <= 60 ? 'short video' : 'long video') : 'video', title: v.title || '(untitled)', author: v.uploaderName || 'YouTube', community: 'youtube.com', permalink: 'https://www.youtube.com/watch?v=' + vid, likes: v.views || 0, comments: 0, ageHours: v.uploaded ? Math.max(0, (Date.now() - v.uploaded) / 3600000) : 0, duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube', thumb: 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg', followers: subsMap[cid] || 0 };
+      const out: Item[] = raw.map((r: any) => { const vid = r.vid, dur = r.dur, v = r.v, cid = r.cid, authorUrl = r.authorUrl;
+        return { id: 'yt_' + vid, topic, type: 'video' as const, format: dur != null ? (dur <= 60 ? 'short video' : 'long video') : 'video', title: v.title || '(untitled)', author: v.uploaderName || 'YouTube', community: 'youtube.com', permalink: 'https://www.youtube.com/watch?v=' + vid, likes: v.views || 0, comments: 0, ageHours: v.uploaded ? Math.max(0, (Date.now() - v.uploaded) / 3600000) : 0, duration: dur, embedUrl: 'https://www.youtube.com/embed/' + vid, provider: 'youtube', thumb: 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg', followers: subsMap[cid] || 0, authorUrl };
       }).filter((it: Item) => it.ageHours < 96).filter(Boolean);
       if (out.length) return out;
     } catch {}
@@ -340,6 +342,7 @@ async function xUserTweets(userId: string, screenName: string, topic: string, la
         ageHours: ageH,
         media: media.length ? media : undefined, thumb, provider: 'x',
         followers: userFollowers,
+        authorUrl: `https://x.com/${screenName}`,
       });
     }
     return items;
@@ -438,6 +441,7 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
         media: media.length ? media : undefined,
         thumb, provider: 'x',
         followers: userMetrics.followers_count || 0,
+        authorUrl: `https://x.com/${user.username || ''}`,
       });
     }
     // Sort by engagement (likes + replies*3 + retweets*2)

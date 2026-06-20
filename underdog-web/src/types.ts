@@ -27,6 +27,7 @@ export interface Post {
   audio?: string; // audio-only url
   duration?: number; // seconds
   community?: string;
+  authorUrl?: string;
   bgFrom?: string;
   bgTo?: string;
   caption: string;

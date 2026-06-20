@@ -12,7 +12,7 @@ export interface LiveItem {
   id: string; topic: string; type: 'video' | 'image' | 'text' | 'story' | 'audio';
   title: string; author: string; community: string;
   media?: string[]; audio?: string; duration?: number; format: string; permalink: string; likes: number; comments: number; ageHours: number;
-  embedUrl?: string; provider?: string; thumb?: string; followers?: number;
+  embedUrl?: string; provider?: string; thumb?: string; followers?: number; authorUrl?: string;
 }
 
 export interface FeedResult { items: LiveItem[]; }
@@ -42,7 +42,7 @@ export function liveToPosts(items: LiveItem[]): { posts: Post[]; users: User[] }
       imageUrl: it.media?.[0], media: it.type === 'story' ? it.media : undefined, audio: it.audio, duration: it.duration,
       caption: it.title, likes: it.likes, comments: it.comments, shares: 0, ageHours: it.ageHours,
       permalink: it.permalink, community: it.community, format: it.format,
-      embedUrl: it.embedUrl, provider: it.provider, thumb: it.thumb,
+      embedUrl: it.embedUrl, provider: it.provider, thumb: it.thumb, authorUrl: it.authorUrl,
     } as Post;
   });
   return { posts, users };

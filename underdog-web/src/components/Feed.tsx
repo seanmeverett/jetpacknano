@@ -1,8 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { userById, topicById } from '../seed';
-import { POST_CREDIT } from '../postImageCredits';
-import { POST_CREDIT as JPG_CREDIT } from '../postImageCreditsJpg';
 import { rankFeed, fmtCount } from '../rank';
 import type { RankedPost } from '../types';
 import { WhySheet } from './WhySheet';
@@ -16,7 +14,7 @@ import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
   IoSparkles, IoCheckmarkCircle, IoVolumeMuteOutline, IoVolumeHighOutline,
-  IoTextOutline, IoImageOutline, IoAlbumsOutline, IoPlayCircleOutline, IoVideocamOutline, IoLogoYoutube, IoMusicalNotesOutline, IoFunnelOutline,
+  IoTextOutline, IoImageOutline, IoAlbumsOutline, IoPlayCircleOutline, IoVideocamOutline, IoLogoYoutube, IoMusicalNotesOutline, IoFunnelOutline, IoOpenOutline,
 } from '../icons';
 
 const initials = (name: string) => name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -205,11 +203,11 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
           <div className="avatar" style={{ background: topic.color }}>{initials(creator.name)}</div>
           <div className="creator-meta">
             <div className="name-row">
-              <span className="name">{creator.name}</span>
+              {post.authorUrl ? <a className="name" href={post.authorUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{creator.name}</a> : <span className="name">{creator.name}</span>}
               {creator.verified && <IoCheckmarkCircle size={13} color="var(--accent)" />}
               {freshFace && <span className="fresh-badge">FRESH FACE</span>}
             </div>
-            <div className="handle">@{creator.handle} · {fmtCount(creator.followers)} followers</div>
+            <div className="handle">{post.authorUrl ? <a href={post.authorUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>@{creator.handle}</a> : <>@{creator.handle}</>} · {fmtCount(creator.followers)} followers</div>
           </div>
           <button className={`follow-btn ${followed ? "following" : ""}`} onClick={onFollow}>{followed ? "Following" : "Follow"}</button>
         </div>
@@ -219,11 +217,11 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         </div>
         {(post.imageUrl || post.media || post.embedUrl || post.audio) && <p className="caption"><LinkText text={post.caption} /></p>}
         <button className="why-link" onClick={onWhy}><IoSparkles size={13} color="var(--accent)" /> Why am I seeing this?</button>
-        {post.permalink
-          ? <a className="photo-credit" href={post.permalink} target="_blank" rel="noreferrer">↗ {post.community || 'source'} &middot; open original</a>
-          : (post.kind === 'image' || post.kind === 'video') && (() => { const c = POST_CREDIT[post.id] || JPG_CREDIT[post.id]; return c ? (
-            <a className="photo-credit" href={c.source} target="_blank" rel="noreferrer">Photo: {c.credit} &middot; {c.license}</a>
-          ) : (post.kind === 'video' ? <a className="photo-credit" href="https://www.pexels.com" target="_blank" rel="noreferrer">Clip: Pexels &middot; Free License</a> : null); })()}
+        {post.permalink && (
+          <a className="open-source-btn" href={post.permalink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+            <IoOpenOutline size={16} /> Open on {post.community === 'x.com' ? 'X' : post.community === 'youtube.com' ? 'YouTube' : (post.community || 'source')}
+          </a>
+        )}
       </div>
     </section>
   );

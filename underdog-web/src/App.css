@@ -230,3 +230,13 @@ input[type=range].good { accent-color:var(--good); }
 /* Pause/play overlay for videos */
 .pause-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; pointer-events:none; background:rgba(0,0,0,0.25); }
 .pause-overlay svg { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6)); }
+
+/* Clickable creator name */
+a.name { color: var(--text); text-decoration: none; font-weight: 700; }
+a.name:hover { text-decoration: underline; }
+.creator-meta a { color: var(--dim); text-decoration: none; }
+.creator-meta a:hover { color: var(--text); text-decoration: underline; }
+
+/* Open on [platform] button */
+.open-source-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; margin-top: 10px; border-radius: 20px; background: rgba(255,0,0,0.15); border: 1px solid rgba(255,0,0,0.3); color: var(--text); font-size: 13px; font-weight: 600; text-decoration: none; transition: background 0.2s; }
+.open-source-btn:hover { background: rgba(255,0,0,0.25); }
