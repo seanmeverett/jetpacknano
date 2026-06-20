@@ -33,3 +33,4 @@ scripts/**/*.js
 
 # Content media lives in Supabase Storage, not the repo
 public/posts/
+.env*
