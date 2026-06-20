@@ -318,7 +318,7 @@ async function xUserTweets(userId: string, screenName: string, topic: string, la
       for (const m of ext) {
         if (m.type === 'video' || m.type === 'animated_gif') {
           const v = m.video_info?.variants?.filter((v: any) => v.content_type === 'video/mp4')
-            .sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0];
+            .sort((a: any, b: any) => (a.bitrate || 0) - (b.bitrate || 0))[0];
           if (v?.url) { media.push(v.url); type = 'video'; format = 'short video'; }
         } else if (m.type === 'photo' && m.media_url_https) {
           media.push(m.media_url_https);
@@ -386,7 +386,7 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
   try {
     // Search X for the exact topic the user entered — no extra keywords
     const query = encodeURIComponent(`${topic} -is:retweet lang:${lang} min_faves:10`);
-    const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=50&sort_order=relevancy&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url,public_metrics&media.fields=url,preview_image_url,type,duration_ms`;
+    const url = `https://api.twitter.com/2/tweets/search/recent?query=${query}&max_results=50&sort_order=relevancy&tweet.fields=public_metrics,created_at,lang,entities,attachments,referenced_tweets&expansions=author_id,attachments.media_keys&user.fields=name,username,profile_image_url,public_metrics&media.fields=url,preview_image_url,type,duration_ms,variants`;
 
     const r = await fetch(url, {
       headers: { 'Authorization': `Bearer ${bearerToken}`, 'User-Agent': UA },
@@ -421,7 +421,10 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en'): P
         const m = mediaMap[key];
         if (!m) continue;
         if (m.type === 'video' || m.type === 'animated_gif') {
-          if (m.url) { media.push(m.url); type = 'video'; format = 'short video'; }
+          // v2 API returns video URLs in variants, not url field
+          const mp4 = (m.variants || []).filter((v: any) => v.content_type === 'video/mp4')
+            .sort((a: any, b: any) => (a.bitrate || 0) - (b.bitrate || 0))[0];
+          if (mp4?.url) { media.push(mp4.url); type = 'video'; format = 'short video'; }
         } else if (m.type === 'photo') {
           if (m.url) { media.push(m.url); if (type === 'text') { type = 'image'; format = 'image'; } }
         }

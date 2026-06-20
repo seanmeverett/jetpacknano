@@ -175,7 +175,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         : post.media && post.media.length > 1
         ? <StoryView images={post.media} alt={post.caption} />
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
-        ? (active ? <video ref={vidRef} className="card-bg" src={post.imageUrl} autoPlay loop muted={cardMuted} playsInline preload="metadata" /> : <div className="tiktok-placeholder"><span>▶</span></div>)
+        ? (active ? <video ref={vidRef} className="card-bg" src={post.imageUrl} poster={post.thumb} autoPlay loop muted={cardMuted} playsInline preload="auto" /> : <img className="card-bg" src={post.thumb} alt="" />)
         : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : <div className="text-center"><p className="text-body"><LinkText text={post.caption} /></p></div>}
       {(post.imageUrl || post.media || post.embedUrl || post.audio || post.tiktokUrl) && <div className="tap-layer" onClick={tapBg} />}
       <div className="grad-top" />
