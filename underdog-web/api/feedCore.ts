@@ -35,14 +35,18 @@ const X_ACCOUNTS: Record<string, { s: string; id: string }[]> = {
   ai: [
     { s: 'OpenAI', id: '4398626122' }, { s: 'AnthropicAI', id: '1353836358901501952' },
     { s: 'GoogleAI', id: '33838201' }, { s: 'xai', id: '1661523610111193088' },
-    { s: 'DeepMindAI', id: '1219193735180967937' }, { s: 'huggingface', id: '778764142412984320' },
+    { s: 'huggingface', id: '778764142412984320' },
     { s: 'ylecun', id: '48008938' }, { s: 'karpathy', id: '33836629' }, { s: 'sama', id: '1605' },
+    { s: 'MicrosoftAI', id: '885220904761933824' }, { s: 'MistralAI', id: '1667249535519805451' },
+    { s: '_akhaliq', id: '2465283662' },
   ],
   'artificial intelligence': [
     { s: 'OpenAI', id: '4398626122' }, { s: 'AnthropicAI', id: '1353836358901501952' },
     { s: 'GoogleAI', id: '33838201' }, { s: 'xai', id: '1661523610111193088' },
-    { s: 'DeepMindAI', id: '1219193735180967937' }, { s: 'huggingface', id: '778764142412984320' },
+    { s: 'huggingface', id: '778764142412984320' },
     { s: 'ylecun', id: '48008938' }, { s: 'karpathy', id: '33836629' }, { s: 'sama', id: '1605' },
+    { s: 'MicrosoftAI', id: '885220904761933824' }, { s: 'MistralAI', id: '1667249535519805451' },
+    { s: '_akhaliq', id: '2465283662' },
   ],
   'machine learning': [
     { s: 'huggingface', id: '778764142412984320' }, { s: 'karpathy', id: '33836629' },
@@ -50,6 +54,7 @@ const X_ACCOUNTS: Record<string, { s: string; id: string }[]> = {
   ],
   tech: [
     { s: 'verge', id: '275686563' }, { s: 'TechCrunch', id: '816653' }, { s: 'WIRED', id: '1344951' },
+    { s: 'engadget', id: '16956673' }, { s: 'Gizmodo', id: '23481152' },
   ],
   science: [
     { s: 'NASA', id: '11348282' }, { s: 'SciAm', id: '14647570' },
@@ -206,6 +211,9 @@ async function youtubeQuery(q: string, topic: string, apiKey?: string, lang = 'e
 
 let cachedGuestToken: { token: string; ts: number } | null = null;
 
+// Reset cached guest token so the next call gets a fresh one (avoids per-token rate limits)
+function resetGuestToken() { cachedGuestToken = null; }
+
 async function getGuestToken(): Promise<string | null> {
   // Reuse token for 10 minutes
   if (cachedGuestToken && Date.now() - cachedGuestToken.ts < 600000) return cachedGuestToken.token;
@@ -226,7 +234,7 @@ async function xUserTweets(userId: string, screenName: string, topic: string, la
   if (!gt) return [];
   try {
     const vars = encodeURIComponent(JSON.stringify({
-      userId, count: 10, includePromotedContent: false,
+      userId, count: 40, includePromotedContent: false,
       withQuickPromoteEligibilityTweetFields: true, withVoice: true, withV2Timeline: true,
     }));
     const r = await fetch(`${X_USER_TWEETS}?variables=${vars}&features=${X_FEATURES}`, {
@@ -250,12 +258,16 @@ async function xUserTweets(userId: string, screenName: string, topic: string, la
     for (const tw of tweets) {
       const leg = tw.legacy;
       if (!leg) continue;
-      // Skip retweets — only original content
-      if (leg.full_text?.startsWith('RT @')) continue;
+      // Skip retweets (check both RT prefix and retweeted_status_result)
+      if (leg.full_text?.startsWith('RT @') || tw.legacy?.retweeted_status_result) continue;
+      // Skip replies (tweets that start with @ or have in_reply_to_status_id_str)
+      if (leg.in_reply_to_status_id_str || /^@\w/.test(leg.full_text || '')) continue;
       if (leg.lang && leg.lang !== lang) continue;
 
       const text = (leg.full_text || '').replace(/https?:\/\/t\.co\/\S+/g, '').trim();
-      if (!text || (lang === 'en' && hasNonLatinScript(text))) continue;
+      if (!text) continue;
+      if (lang === 'en' && hasNonLatinScript(text)) continue;
+      
 
       const media: string[] = []; let type: Item['type'] = 'text'; let format = 'text';
       let thumb: string | undefined;
@@ -275,13 +287,15 @@ async function xUserTweets(userId: string, screenName: string, topic: string, la
 
       const tid = tw.rest_id || leg.id_str;
       const created = leg.created_at ? new Date(leg.created_at).getTime() : Date.now();
+      const ageH = Math.max(0, (Date.now() - created) / 3600000);
+      if (ageH > 720) continue; // skip tweets older than 30 days
       items.push({
         id: 'x_' + tid, topic, type, format,
         title: text.slice(0, 500),
         author: '@' + screenName, community: 'x.com',
         permalink: `https://x.com/${screenName}/status/${tid}`,
         likes: leg.favorite_count || 0, comments: leg.reply_count || 0,
-        ageHours: Math.max(0, (Date.now() - created) / 3600000),
+        ageHours: ageH,
         media: media.length ? media : undefined, thumb, provider: 'x',
       });
     }
@@ -293,16 +307,27 @@ async function xTopicTweets(topic: string, lang = 'en'): Promise<Item[]> {
   const accounts = X_ACCOUNTS[topic];
   if (!accounts?.length) return [];
   // Fetch from up to 4 accounts in parallel (balance speed vs rate limits)
-  const batch = accounts.slice(0, 4);
-  const results = await Promise.allSettled(
-    batch.map((a) => xUserTweets(a.id, a.s, topic, lang))
-  );
+  // Fetch in batches of 4 to avoid X guest-token rate limits
+  const BATCH_SIZE = 3;
+  const allResults: Item[] = [];
+  for (let i = 0; i < accounts.length; i += BATCH_SIZE) {
+    const batch = accounts.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map((a) => xUserTweets(a.id, a.s, topic, lang))
+    );
+    for (const r of results) {
+      if (r.status === 'fulfilled') allResults.push(...r.value);
+    }
+    if (i + BATCH_SIZE < accounts.length) { resetGuestToken(); await new Promise((r) => setTimeout(r, 600)); }
+  }
   const seen = new Set<string>();
   const items: Item[] = [];
-  for (const r of results) {
-    if (r.status === 'fulfilled') for (const it of r.value) if (!seen.has(it.id)) { seen.add(it.id); items.push(it); }
+  for (const it of allResults) {
+    if (!seen.has(it.id)) { seen.add(it.id); items.push(it); }
   }
-  return items;
+  // Sort by engagement (likes + comments*3) to surface trending/popular tweets, keep top 25
+  items.sort((a, b) => (b.likes + b.comments * 3) - (a.likes + a.comments * 3));
+  return items.slice(0, 25);
 }
 
 const FORMAT_PRIORITY = ['short video', 'video', 'long video', 'image', 'story', 'audio', 'text'];
