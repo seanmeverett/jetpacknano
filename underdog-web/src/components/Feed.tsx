@@ -56,6 +56,9 @@ export function Feed() {
     }
   }, [idx, ranked, markSeen]);
 
+  // MUST be before any early return — React hooks can't be conditional
+  const loadingMoreRef = useRef(false);
+
   if (posts.length === 0) {
     return (
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -67,7 +70,6 @@ export function Feed() {
     );
   }
 
-  const loadingMoreRef = useRef(false);
   const onScroll = () => {
     const el = scroller.current; if (!el) return;
     const i = Math.round(el.scrollTop / el.clientHeight);
