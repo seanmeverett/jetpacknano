@@ -139,7 +139,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const currentSeen = seenIdsRef.current;
     const seenSet = new Set(currentSeen);
     fetchLiveFeed(topics, lang, region, currentSeen).then((res) => {
-      const filtered = res.items.filter((it) => !seenSet.has(it.id));
+      let filtered = res.items.filter((it) => !seenSet.has(it.id));
+      // If everything was seen, show it anyway rather than a blank screen
+      if (!filtered.length && res.items.length) filtered = res.items;
       if (!filtered.length) return;
       const { posts: lp, users: lu } = liveToPosts(filtered);
       setPrefetched({ posts: lp, users: lu });
@@ -150,12 +152,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const currentSeen = seenIdsRef.current;
     const seenSet = new Set(currentSeen);
     fetchLiveFeed(topics, lang, region, currentSeen).then((res) => {
-      const filtered = res.items.filter((it) => !seenSet.has(it.id));
+      let filtered = res.items.filter((it) => !seenSet.has(it.id));
+      // If everything was seen, show it anyway rather than a blank screen
+      if (!filtered.length && res.items.length) {
+        filtered = res.items;
+        // Clear seenIds so future loads can filter properly again
+        setSeenIds([]); seenIdsRef.current = [];
+        try { localStorage.removeItem('jetpacknano_seen'); } catch {}
+      }
       if (!filtered.length) return;
       const { posts: lp, users: lu } = liveToPosts(filtered);
       setPosts(lp);
       setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
-      // Mark all loaded posts as seen so they don't reappear on browser refresh
       markSeen(lp.map((p) => p.id));
     }).catch(() => {});
   }, []);
@@ -214,14 +222,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const currentSeen = seenIdsRef.current;
       fetchLiveFeed(interests as unknown as string[], lang, region, currentSeen).then((res) => {
         const seenSet = new Set(currentSeen);
-        const filtered = res.items.filter((it) => !seenSet.has(it.id));
+        let filtered = res.items.filter((it) => !seenSet.has(it.id));
+        // If everything was seen, show it anyway and clear seenIds for fresh start
+        if (!filtered.length && res.items.length) {
+          filtered = res.items;
+          setSeenIds([]); seenIdsRef.current = [];
+          try { localStorage.removeItem('jetpacknano_seen'); } catch {}
+        }
         if (filtered.length) {
           const { posts: lp, users: lu } = liveToPosts(filtered);
           setPosts(lp);
           setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
-          // Mark all loaded posts as seen so they don't reappear on browser refresh
           markSeen(lp.map((p) => p.id));
-            } else if (attempt < 2) {
+        } else if (attempt < 2) {
           setTimeout(() => doRefresh(attempt + 1), 3000);
         }
       }).catch(() => { if (attempt < 2) setTimeout(() => doRefresh(attempt + 1), 3000); });
