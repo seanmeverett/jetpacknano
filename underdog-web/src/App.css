@@ -18,6 +18,7 @@
 .feed::-webkit-scrollbar { width:0; }
 .card { height:100%; scroll-snap-align:start; position:relative; overflow:hidden; display:flex; }
 .card-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+img.card-bg { object-fit:contain; background:#000; }
 .tap-layer { position:absolute; inset:0; z-index:2; }
 .grad-top { position:absolute; top:0; left:0; right:0; height:140px; background:linear-gradient(rgba(0,0,0,0.45), transparent); z-index:1; pointer-events:none; }
 .grad-bottom { position:absolute; left:0; right:0; bottom:0; height:330px; background:linear-gradient(transparent, rgba(0,0,0,0.82)); z-index:1; pointer-events:none; }
@@ -124,7 +125,7 @@ input[type=range].good { accent-color:var(--good); }
 .photo-credit:active { color:var(--dim); }
 
 /* ---------- Motion on every content card (GIFs animate; photos get Ken Burns) ---------- */
-.card-bg { animation: kenburns 18s ease-in-out infinite alternate; }
+video.card-bg, iframe.card-bg { animation: kenburns 18s ease-in-out infinite alternate; }
 @keyframes kenburns {
   0%   { transform: scale(1.0) translate(0, 0); }
   100% { transform: scale(1.12) translate(-1.5%, -1.5%); }
