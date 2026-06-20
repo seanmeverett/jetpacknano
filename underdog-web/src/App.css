@@ -180,9 +180,9 @@ video.card-bg, iframe.card-bg { animation: kenburns 18s ease-in-out infinite alt
 .audio-card { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:linear-gradient(135deg,#220000,#000); z-index:1; }
 .audio-card .audio-label { color:var(--text); font-size:16px; font-weight:700; }
 .audio-card audio { display:none; }
-.loading-state { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 40px 30px; }
-.loading-text { color: var(--brand); font-size: 20px; font-weight: 800; margin-bottom: 8px; text-align:left; }
-.loading-sub { color: var(--brand2); font-size: 14px; text-align:left; max-width: 280px; line-height: 1.5; }
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 30px; text-align: center; }
+.loading-text { color: var(--brand); font-size: 15px; font-weight: 600; margin-bottom: 6px; text-align: center; letter-spacing: 0.3px; }
+.loading-sub { color: var(--brand2); font-size: 12px; text-align: center; max-width: 260px; line-height: 1.6; font-weight: 400; letter-spacing: 0.2px; }
 .inline-link { color: var(--accent); text-decoration: underline; overflow-wrap: break-word; word-break: break-all; }
 .inline-link:active { opacity: 0.7; }
 
@@ -251,7 +251,7 @@ a.name:hover { text-decoration: underline; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Loading screen icon — larger brand icon with slow pulse */
-.loading-icon { display:block; width:56px; height:40px; background:var(--brand); margin:0 auto 24px;
+.loading-icon { display:block; width:56px; height:40px; background:var(--brand); margin:0 auto 32px;
   -webkit-mask:url('/jetpack-icon.svg') no-repeat center/contain; mask:url('/jetpack-icon.svg') no-repeat center/contain;
   animation: pulse 3.5s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.88); } }
