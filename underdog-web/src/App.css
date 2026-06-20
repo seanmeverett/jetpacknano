@@ -181,8 +181,8 @@ video.card-bg, iframe.card-bg { animation: kenburns 18s ease-in-out infinite alt
 .audio-card .audio-label { color:var(--text); font-size:16px; font-weight:700; }
 .audio-card audio { display:none; }
 .loading-state { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 40px 30px; }
-.loading-text { color: var(--text); font-size: 20px; font-weight: 800; margin-bottom: 8px; text-align:left; }
-.loading-sub { color: var(--text-faint); font-size: 14px; text-align:left; max-width: 280px; line-height: 1.5; }
+.loading-text { color: var(--brand); font-size: 20px; font-weight: 800; margin-bottom: 8px; text-align:left; }
+.loading-sub { color: var(--brand2); font-size: 14px; text-align:left; max-width: 280px; line-height: 1.5; }
 .inline-link { color: var(--accent); text-decoration: underline; overflow-wrap: break-word; word-break: break-all; }
 .inline-link:active { opacity: 0.7; }
 
