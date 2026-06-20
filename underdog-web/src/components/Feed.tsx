@@ -27,7 +27,7 @@ const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h
 const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, trends, markSeen } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
   const [shareFor, setShareFor] = useState<RankedPost | null>(null);
@@ -85,7 +85,6 @@ export function Feed() {
 
       <div className="topbar">
         <span className="brand"><span className="brand-icon" />&nbsp;Jetpack Nano</span>
-        {trends.length > 0 && <div className="trending-bar"><span className="trending-label">Trending on X</span><div className="trending-scroll">{trends.slice(0, 12).map((t, i) => <span key={i} className="trending-chip">{t}</span>)}</div></div>}
         <button className={`mode-pill ${opts.mode}`} onClick={() => setScreen('settings')}>
           {opts.mode === 'inverse' ? <IoTrendingDownOutline size={13} /> : <IoTrendingUpOutline size={13} />}
           {opts.mode === 'inverse' ? 'Inverse' : 'Standard'}

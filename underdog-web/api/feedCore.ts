@@ -31,29 +31,6 @@ const X_FEATURES = encodeURIComponent(JSON.stringify({
 }));
 
 
-// WOEID mapping for X trends API (region → Where On Earth ID)
-const WOEIDS: Record<string, number> = {
-  US: 23424977, GB: 23424975, CA: 23424748, DE: 23424829, FR: 23424819,
-  JP: 23424856, KR: 23424827, IN: 23424848, BR: 23424740, AU: 23424746,
-  ES: 23424950, IT: 23424853, MX: 23424901,
-};
-
-// Fetch trending topics from X v1.1 trends API (works with guest token)
-async function xTrends(region = 'US'): Promise<string[]> {
-  const woeid = WOEIDS[region] ?? 23424977; // default US
-  const gt = await getGuestToken();
-  if (!gt) return [];
-  try {
-    const r = await fetch(`https://api.twitter.com/1.1/trends/place.json?id=${woeid}`, {
-      headers: { 'Authorization': `Bearer ${X_BEARER}`, 'x-guest-token': gt, 'User-Agent': UA },
-    });
-    if (!r.ok) return [];
-    const j = await r.json() as any[];
-    const trends = (j[0]?.trends || []).map((t: any) => t.name.replace(/^#/, ''));
-    return trends;
-  } catch { return []; }
-}
-
 // Curated X accounts per topic: screen_name → user_id (pre-resolved to avoid extra API calls)
 const X_ACCOUNTS: Record<string, { s: string; id: string }[]> = {
   ai: [
@@ -406,9 +383,6 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
   const tasks: Promise<Item[]>[] = [];
   const seenSet = new Set(seenIds);
 
-  // Fetch X trending topics for display in the trending bar
-  const trends = await xTrends(region);
-
   for (const topic of topics) {
     // YouTube: search using the topic name (or Q map expansions for better results)
     const q = Q[topic];
@@ -423,11 +397,12 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
   }
   const results = await Promise.allSettled(tasks);
 
-  // Deduplicate and filter out already-seen posts
+  // Deduplicate, filter already-seen, and drop zero-engagement content
   const dedup = new Set<string>(); const items: Item[] = [];
   for (const r of results) {
     if (r.status === 'fulfilled') for (const it of r.value) {
       if (dedup.has(it.id) || seenSet.has(it.id)) continue;
+      if (it.likes <= 0 && it.comments <= 0) continue; // only content with engagement
       dedup.add(it.id); items.push(it);
     }
   }
@@ -444,5 +419,5 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
   // Sort all items by combined score (most relevant + popular + recent first)
   items.sort((a, b) => combinedScore(b) - combinedScore(a));
 
-  return { items, count: items.length, trends, matchingTrends: [] };
+  return { items, count: items.length };
 }

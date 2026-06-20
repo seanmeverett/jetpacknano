@@ -22,7 +22,6 @@ interface Persisted {
   comments: Record<string, Comment[]>;
   seedComments: Record<string, Comment[]>;
   topicOrder: string[];
-  trends: string[];
   seenIds: string[];
   markSeen: (ids: string[]) => void;
 }
@@ -55,7 +54,6 @@ interface AppState {
   addTopic: (topic: string) => void;
   removeTopic: (topic: string) => void;
   topicOrder: string[];
-  trends: string[];
   seenIds: string[];
   markSeen: (ids: string[]) => void;
   reorderTopics: (newOrder: string[]) => void;
@@ -97,7 +95,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]); // live-only, no stock seed
   const [prefetched, setPrefetched] = useState<{ posts: Post[]; users: import('./types').User[] } | null>(null);
   const [topicOrder, setTopicOrder] = useState<string[]>(saved.topicOrder ?? []);
-  const [trends, setTrends] = useState<string[]>([]);
   const [seenIds, setSeenIds] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('jetpacknano_seen') || '[]'); } catch { return []; }
   });
@@ -141,7 +138,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!filtered.length) return;
       const { posts: lp, users: lu } = liveToPosts(filtered);
       setPrefetched({ posts: lp, users: lu });
-      if (res.trends?.length) setTrends(res.trends);
     }).catch(() => {});
   }, []);
 
@@ -154,7 +150,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { posts: lp, users: lu } = liveToPosts(filtered);
       setPosts(lp);
       setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
-      if (res.trends?.length) setTrends(res.trends);
     }).catch(() => {});
   }, []);
 
@@ -182,8 +177,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const { posts: lp, users: lu } = liveToPosts(res.items);
           setPosts(lp);
           setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
-          if (res.trends?.length) setTrends(res.trends);
-        } else if (attempt < 2) {
+            } else if (attempt < 2) {
           setTimeout(() => doRefresh(attempt + 1), 3000);
         }
       }).catch(() => { if (attempt < 2) setTimeout(() => doRefresh(attempt + 1), 3000); });
@@ -294,9 +288,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, trends, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, trends, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

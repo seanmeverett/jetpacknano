@@ -15,7 +15,7 @@ export interface LiveItem {
   embedUrl?: string; provider?: string; thumb?: string;
 }
 
-export interface FeedResult { items: LiveItem[]; trends: string[]; matchingTrends: string[]; }
+export interface FeedResult { items: LiveItem[]; }
 
 export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US', seenIds: string[] = []): Promise<FeedResult> {
   try {
@@ -23,10 +23,10 @@ export async function fetchLiveFeed(topics: string[], lang = 'en', region = 'US'
     // Limit to last 100 seen IDs to avoid URL length limits
     if (seenIds.length) params.set('seen', seenIds.slice(-100).join(','));
     const r = await fetch('/api/feed?' + params.toString());
-    if (!r.ok) return { items: [], trends: [], matchingTrends: [] };
+    if (!r.ok) return { items: [] };
     const j = await r.json();
-    return { items: (j.items || []) as LiveItem[], trends: j.trends || [], matchingTrends: j.matchingTrends || [] };
-  } catch { return { items: [], trends: [], matchingTrends: [] }; }
+    return { items: (j.items || []) as LiveItem[] };
+  } catch { return { items: [] }; }
 }
 
 const sanitize = (s: string) => s.replace(/[^a-z0-9_]/gi, '').slice(0, 40);
