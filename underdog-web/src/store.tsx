@@ -218,15 +218,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFollowed((f) => ({ ...f, [creatorId]: !f[creatorId] }));
   }, []);
 
-  // Background refresh: keep feed fresh every 5 minutes when viewing feed
-  useEffect(() => {
-    if (screen !== 'feed' || !onboardingDone) return;
-    const interests = topicOrder.filter((t) => (prefs.interests[t] ?? 0) > 0);
-    if (!interests.length) return;
-    const id = setInterval(() => refreshLive(interests, prefs.lang || 'en', prefs.region || 'US'), 300000);
-    return () => clearInterval(id);
-  }, [screen, onboardingDone, prefs.interests, refreshLive]);
-
   const addTopic = useCallback((topic: string) => {
     const t = topic.trim().toLowerCase();
     if (!t) return;
