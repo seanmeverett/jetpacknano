@@ -120,16 +120,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
-  // Pull sync data from Supabase on mount (cross-device restore)
+  // Pull sync data from Supabase on mount — only restore behavioral data
+  // NOT prefs/topics (those come from the onboarding screen the user just filled out)
   useEffect(() => {
     const uid = getSyncUserId();
     pullSync(uid).then((data) => {
       if (!data) return;
+      // Only restore behavioral profile + seenIds — preferences come from onboarding
       if (data.behaviorProfile) { setBehaviorProfile(data.behaviorProfile); saveProfile(data.behaviorProfile); }
-      if (data.seenIds?.length) { seenIdsRef.current = data.seenIds; try { localStorage.setItem('jetpacknano_seen', JSON.stringify(data.seenIds)); } catch {} }
-      if (data.prefs) setPrefs(data.prefs);
-      if (data.opts) setOpts(data.opts);
-      if (data.topicOrder) setTopicOrder(data.topicOrder);
+      if (data.seenIds?.length) {
+        // Cap restored seenIds to 200 to avoid over-filtering
+        const capped = data.seenIds.slice(-200);
+        seenIdsRef.current = capped;
+        try { localStorage.setItem('jetpacknano_seen', JSON.stringify(capped)); } catch {}
+      }
       setSyncLinked(true);
     }).catch(() => {});
   }, []);
