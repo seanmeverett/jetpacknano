@@ -496,17 +496,49 @@ export async function buildFeed(topics: string[], youtubeApiKey?: string, lang =
     }
   }
 
-  // Rank by combined score: log-scale engagement (50%) + recency (50%)
-  // Log scale balances YouTube (millions of views) vs X (tens of likes)
-  // Recency score: 1.0 at 0h, decays to 0.1 at 168h (7 days)
+  // ─── Smart ranking: growth + virality + discussion + format interleaving ───
+  // Engagement: log-scale (balances YouTube views vs X likes)
+  const logEng = (it: Item) => Math.log10(engagementScore(it) + 1);
+  const maxLogEng = Math.max(0.1, ...items.map(logEng));
+
+  // Growth signal: engagement-per-hour — favors content gaining rapid traction
+  // A 2h-old post with 5K likes scores higher than a 40h-old post with 20K likes
+  const growthScore = (it: Item) => engagementScore(it) / Math.max(1, Math.sqrt(it.ageHours));
+  const maxGrowth = Math.max(1, ...items.map(growthScore));
+
+  // Discussion signal: comment-to-engagement ratio — surfaces new findings/novelty
+  // High comment ratio = people are debating/discovering, not just passively viewing
+  const discussionScore = (it: Item) => it.comments / Math.max(1, engagementScore(it));
+  const maxDiscussion = Math.max(0.01, ...items.map(discussionScore));
+
+  // Recency: 1.0 at 0h, decays to 0.1 at 96h (4 days)
   const recencyScore = (ageH: number) => Math.max(0.1, 1.0 - (ageH / 96) * 0.9);
-  const logEngagement = (it: Item) => Math.log10(engagementScore(it) + 1);
-  const maxLogEng = Math.max(0.1, ...items.map(logEngagement));
+
+  // Combined: engagement (35%) + growth (25%) + recency (25%) + discussion (15%)
   const combinedScore = (it: Item) =>
-    0.5 * (logEngagement(it) / maxLogEng) + 0.5 * recencyScore(it.ageHours);
+    0.35 * (logEng(it) / maxLogEng) +
+    0.25 * (growthScore(it) / maxGrowth) +
+    0.25 * recencyScore(it.ageHours) +
+    0.15 * (discussionScore(it) / maxDiscussion);
 
-  // Sort all items by combined score (most relevant + popular + recent first)
-  items.sort((a, b) => combinedScore(b) - combinedScore(a));
+  // Sort each format group by combined score (best content within each format)
+  const FORMAT_ORDER = ['short video', 'long video', 'image', 'text', 'story', 'audio', 'video'];
+  const groups: Record<string, Item[]> = {};
+  for (const it of items) (groups[it.format] ??= []).push(it);
+  for (const fmt of Object.keys(groups)) groups[fmt].sort((a, b) => combinedScore(b) - combinedScore(a));
 
-  return { items, count: items.length };
+  // Interleave: round-robin between format groups so the feed alternates
+  // long video → short video → image/text → long video → short video → ...
+  // This prevents "10 long videos in a row" fatigue while keeping best content first
+  const interleaved: Item[] = [];
+  let added = true;
+  while (added) {
+    added = false;
+    for (const fmt of FORMAT_ORDER) {
+      const g = groups[fmt];
+      if (g && g.length > 0) { interleaved.push(g.shift()!); added = true; }
+    }
+  }
+
+  return { items: interleaved, count: interleaved.length };
 }
