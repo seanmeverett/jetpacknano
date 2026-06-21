@@ -258,3 +258,22 @@ a.name:hover { text-decoration: underline; }
 
 /* Source platform reach stats */
 .source-stats { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--brand2); font-weight:500; }
+
+/* Cross-device sync */
+.sync-section { display:flex; flex-direction:column; gap:10px; }
+.sync-code-row { display:flex; align-items:center; gap:8px; }
+.sync-code { font-family:monospace; font-size:18px; font-weight:700; letter-spacing:2px; color:var(--brand); background:rgba(255,0,0,0.08); padding:8px 14px; border-radius:8px; flex:1; text-align:center; }
+.sync-copy-btn { padding:8px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--text); }
+.sync-status { font-size:12px; }
+.sync-active { color:var(--brand); }
+.sync-pending { color:var(--faint); }
+.sync-push-btn { padding:10px; border-radius:10px; background:var(--brand); color:#fff; font-weight:600; font-size:14px; }
+.sync-divider { text-align:center; position:relative; margin:4px 0; }
+.sync-divider span { background:var(--panel-solid); padding:0 10px; color:var(--faint); font-size:11px; position:relative; z-index:1; }
+.sync-divider::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border); }
+.sync-link-row { display:flex; gap:8px; }
+.sync-input { flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:10px; padding:10px 14px; color:var(--text); font-size:15px; outline:none; text-transform:uppercase; letter-spacing:1px; }
+.sync-input:focus { border-color:var(--brand); }
+.sync-input::placeholder { color:var(--faint); text-transform:none; letter-spacing:0; }
+.sync-link-btn { padding:10px 20px; border-radius:10px; background:var(--brand2); color:#fff; font-weight:600; font-size:14px; }
+.sync-link-btn:disabled { opacity:0.4; }

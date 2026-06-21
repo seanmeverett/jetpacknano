@@ -5,6 +5,7 @@ import { loadUsers, loadComments, fetchLiveFeed, liveToPosts } from './api';
 import { getCookie, setCookie, deleteCookie } from './cookies';
 import type { BehaviorProfile, DwellRecord } from './behavior';
 import { loadProfile, saveProfile, updateProfile } from './behavior';
+import { getSyncUserId, pushSync, pullSync, setSyncUserId, type SyncData } from './sync';
 
 type TopicId = string; // any topic, including custom free-text
 
@@ -58,6 +59,10 @@ interface AppState {
   noMoreContent: boolean;
   behaviorProfile: BehaviorProfile;
   recordDwell: (record: DwellRecord) => void;
+  syncUserId: string;
+  syncLinked: boolean;
+  pushSyncNow: () => void;
+  linkDevice: (code: string) => Promise<boolean>;
   addTopic: (topic: string) => void;
   removeTopic: (topic: string) => void;
   topicOrder: string[];
@@ -110,9 +115,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [noMoreContent, setNoMoreContent] = useState(false);
   const [behaviorProfile, setBehaviorProfile] = useState<BehaviorProfile>(() => loadProfile());
+  const [syncUserId] = useState<string>(() => getSyncUserId());
+  const [syncLinked, setSyncLinked] = useState<boolean>(false);
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
+  // Pull sync data from Supabase on mount (cross-device restore)
+  useEffect(() => {
+    const uid = getSyncUserId();
+    pullSync(uid).then((data) => {
+      if (!data) return;
+      if (data.behaviorProfile) { setBehaviorProfile(data.behaviorProfile); saveProfile(data.behaviorProfile); }
+      if (data.seenIds?.length) { seenIdsRef.current = data.seenIds; try { localStorage.setItem('jetpacknano_seen', JSON.stringify(data.seenIds)); } catch {} }
+      if (data.prefs) setPrefs(data.prefs);
+      if (data.opts) setOpts(data.opts);
+      if (data.topicOrder) setTopicOrder(data.topicOrder);
+      setSyncLinked(true);
+    }).catch(() => {});
+  }, []);
+
   // On mount: if already onboarded, start fetching live content immediately (don't wait for finishOnboarding)
   useEffect(() => {
     if (onboardingDone) {
@@ -138,6 +159,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setCookie(COOKIE, { prefs, opts, liked, followed, comments, topicOrder });
   }, [onboardingDone, prefs, opts, liked, followed, comments, topicOrder]);
+
+
 
 
   const prefetchFeed = useCallback((topics: string[], lang = 'en', region = 'US') => {
@@ -260,7 +283,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return updated;
     });
   }, []);
+  // Push current state to Supabase for cross-device sync
+  const pushSyncNow = useCallback(() => {
+    const data: SyncData = {
+      behaviorProfile, seenIds: seenIdsRef.current, prefs, opts, liked, followed,
+      comments, topicOrder, ts: Date.now(),
+    };
+    pushSync(syncUserId, data).then(() => setSyncLinked(true)).catch(() => {});
+  }, [behaviorProfile, prefs, opts, liked, followed, comments, topicOrder, syncUserId]);
+
+  // Link a new device by entering the sync code from another device
+  const linkDevice = useCallback(async (code: string): Promise<boolean> => {
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed.length < 8) return false;
+    const data = await pullSync(trimmed);
+    if (!data) return false;
+    // Apply the synced state
+    setSyncUserId(trimmed);
+    if (data.behaviorProfile) { setBehaviorProfile(data.behaviorProfile); saveProfile(data.behaviorProfile); }
+    if (data.seenIds) { setSeenIds(data.seenIds); seenIdsRef.current = data.seenIds; try { localStorage.setItem('jetpacknano_seen', JSON.stringify(data.seenIds)); } catch {} }
+    if (data.prefs) setPrefs(data.prefs);
+    if (data.opts) setOpts(data.opts);
+    if (data.liked) setLiked(data.liked);
+    if (data.followed) setFollowed(data.followed);
+    if (data.comments) setComments(data.comments);
+    if (data.topicOrder) setTopicOrder(data.topicOrder);
+    setSyncLinked(true);
+    return true;
+  }, []);
+
   const setLang = useCallback((lang: string) => setPrefs((p) => ({ ...p, lang })), []);
+
+  // Auto-push sync to Supabase when key state changes (debounced 10s)
+  useEffect(() => {
+    const t = setTimeout(() => { pushSyncNow(); }, 10000);
+    return () => clearTimeout(t);
+  }, [prefs, opts, liked, followed, comments, topicOrder, behaviorProfile, pushSyncNow]);
   const setRegion = useCallback((region: string) => setPrefs((p) => ({ ...p, region })), []);
 
   const setMode = useCallback((m: FeedMode) => setOpts((o) => ({ ...o, mode: m })), []);
@@ -337,9 +395,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, loadMore, loadingMore, noMoreContent, behaviorProfile, recordDwell, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, loadMore, loadingMore, noMoreContent, behaviorProfile, recordDwell, syncUserId, syncLinked, pushSyncNow, linkDevice, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, loadMore, loadingMore, noMoreContent, behaviorProfile, recordDwell, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, loadMore, loadingMore, noMoreContent, behaviorProfile, recordDwell, syncUserId, syncLinked, pushSyncNow, linkDevice, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -1,9 +1,13 @@
 import { useApp } from '../store';
+import { useState } from 'react';
 import { TOPICS } from '../seed';
-import { TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoPeopleOutline, IoTimeOutline, IoHeartOutline, IoChevronBack, IoRefreshOutline, IoSwapHorizontalOutline, IoCheckmark } from '../icons';
+import { TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoPeopleOutline, IoTimeOutline, IoHeartOutline, IoChevronBack, IoRefreshOutline, IoSwapHorizontalOutline, IoSyncOutline, IoCopyOutline, IoCheckmark } from '../icons';
 
 export function Settings() {
-  const { opts, prefs, setScreen, setMode, setInverseStrength, toggleDiversity, toggleInterest, setInterestWeight, setFreshnessHalfLife, reset } = useApp();
+  const [copied, setCopied] = useState(false);
+  const [linkCode, setLinkCode] = useState('');
+  const [linkResult, setLinkResult] = useState('');
+  const { opts, prefs, setScreen, setMode, setInverseStrength, toggleDiversity, toggleInterest, setInterestWeight, setFreshnessHalfLife, reset, syncUserId, syncLinked, pushSyncNow, linkDevice } = useApp();
 
   return (
     <div className="settings">
@@ -64,6 +68,26 @@ export function Settings() {
 
         <button className="reset-btn" onClick={reset}><IoRefreshOutline size={16} color="var(--bad)" /> Reset &amp; re-onboard</button>
         <div style={{ height: 40 }} />
+        <Card icon={<IoSyncOutline size={17} color="var(--brand2)" />} title="Cross-Device Sync">
+          <div className="sync-section">
+            <p className="help">Your sync code links your data across devices. Enter this code on another device to sync your preferences and viewing history.</p>
+            <div className="sync-code-row">
+              <code className="sync-code">{syncUserId}</code>
+              <button className="sync-copy-btn" onClick={() => { navigator.clipboard?.writeText(syncUserId); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
+                {copied ? <IoCheckmark size={16} color="var(--brand)" /> : <IoCopyOutline size={16} />}
+              </button>
+            </div>
+            <div className="sync-status">
+              {syncLinked ? <span className="sync-active">✓ Synced to cloud</span> : <span className="sync-pending">Not yet synced</span>}
+            </div>
+            <button className="sync-push-btn" onClick={() => pushSyncNow()}>Sync now</button>
+            <div className="sync-divider"><span>Link another device</span></div>
+            <div className="sync-link-row">
+              <input className="sync-input" placeholder="Enter sync code…" maxLength={12} value={linkCode} onChange={(e) => setLinkCode(e.target.value)} />
+              <button className="sync-link-btn" disabled={linkCode.length < 8} onClick={async () => { const ok = await linkDevice(linkCode); setLinkResult(ok ? 'Linked!' : 'Not found'); setTimeout(() => setLinkResult(''), 3000); }}>{linkResult || 'Link'}</button>
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );
