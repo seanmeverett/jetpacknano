@@ -101,7 +101,7 @@ export function Feed() {
     <div className="feed-wrap">
       <div className="feed" ref={scroller} onScroll={onScroll}>
         {ranked.map((rp, i) => (
-          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={mergedComments(rp.post.id).length} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} />
+          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={mergedComments(rp.post.id).length} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} onAutoScroll={() => { const el = scroller.current; if (el) { const next = (Math.round(el.scrollTop / el.clientHeight) + 1) * el.clientHeight; el.scrollTo({ top: next, behavior: 'smooth' }); } }} />
         ))}
         {/* End-of-feed loading / end card — full height so user can scroll to it */}
         <div className="card end-card">
@@ -133,13 +133,13 @@ const FORMAT_ICONS: Record<string, any> = {
   'video': IoPlayCircleOutline, 'short video': IoPlayCircleOutline, 'long video': IoVideocamOutline, 'youtube': IoLogoYoutube,
 };
 const formatInfo = (post: any) => {
-  const fmt = post.format || (post.embedUrl ? 'youtube' : post.audio ? 'audio' : post.media && post.media.length > 1 ? 'story' : post.imageUrl && /\.mp4/.test(post.imageUrl) ? 'video' : post.imageUrl ? 'image' : 'text');
+  const fmt = post.format || (post.embedUrl ? 'long video' : post.audio ? 'audio' : post.media && post.media.length > 1 ? 'story' : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl) ? 'short video' : post.imageUrl ? 'image' : 'text');
   const Icon = FORMAT_ICONS[fmt] || IoTextOutline;
   return { fmt, Icon };
 };
 const hasControllableAudio = (post: any) => !!(post.audio) || !!(post.embedUrl) || !!(post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl));
 
-function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, onComment, onShare, commentCount, muted, onToggleMute }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; onComment: () => void; onShare: () => void; commentCount: number; muted: boolean; onToggleMute: () => void }) {
+function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, onComment, onShare, commentCount, muted, onToggleMute, onAutoScroll }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; onComment: () => void; onShare: () => void; commentCount: number; muted: boolean; onToggleMute: () => void; onAutoScroll: () => void }) {
   const { post, factors } = rp;
   const active = Math.abs(index - activeIndex) <= 1;
   // only the active card can ever play sound; adjacent pre-mounted videos stay muted
@@ -154,12 +154,35 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
   const vidRef = useRef<HTMLVideoElement>(null);
   const isVideo = !!(post.embedUrl) || !!(post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl));
 
-  // Control YouTube iframe mute via postMessage (no reload needed)
+  // Control YouTube iframe mute via postMessage + listen for video end
+  useEffect(() => {
+    if (!post.embedUrl) return;
+    if (ytRef.current) {
+      const cmd = cardMuted ? 'mute' : 'unMute';
+      ytRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: cmd, args: '' }), '*');
+    }
+    // Listen for YouTube state changes (state 0 = ended)
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== 'https://www.youtube.com' && e.origin !== 'https://youtube.com') return;
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (data.event === 'onStateChange' && data.info === 0) {
+          onAutoScroll();
+        }
+      } catch {}
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [cardMuted, post.embedUrl, index]);
+
+  // Request state updates from YouTube iframe once it's loaded
   useEffect(() => {
     if (!ytRef.current || !post.embedUrl) return;
-    const cmd = cardMuted ? 'mute' : 'unMute';
-    ytRef.current.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: cmd, args: '' }), '*');
-  }, [cardMuted, post.embedUrl]);
+    const interval = setInterval(() => {
+      ytRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), '*');
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [post.embedUrl]);
 
   const togglePlayPause = () => {
     setPaused((p) => {
@@ -172,6 +195,8 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
       return next;
     });
   };
+
+  // scrollToNext is passed as onAutoScroll prop from parent Feed
 
   const tapBg = () => {
     const now = Date.now();
@@ -203,7 +228,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         : post.media && post.media.length > 1
         ? <StoryView images={post.media} alt={post.caption} />
         : post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl)
-        ? (active ? <video ref={vidRef} className="card-bg" src={post.imageUrl} poster={post.thumb} autoPlay loop muted={cardMuted} playsInline preload="auto" /> : <img className="card-bg" src={post.thumb} alt="" />)
+        ? (active ? <video ref={vidRef} className="card-bg" src={post.imageUrl} poster={post.thumb} autoPlay loop={false} muted={cardMuted} playsInline preload="auto" onEnded={onAutoScroll} /> : <img className="card-bg" src={post.thumb} alt="" />)
         : post.imageUrl ? <img src={post.imageUrl} alt="" className="card-bg" /> : <div className="text-center"><p className="text-body"><LinkText text={post.caption} /></p></div>}
       {(post.imageUrl || post.media || post.embedUrl || post.audio || post.tiktokUrl) && <div className="tap-layer" onClick={tapBg} />}
       <div className="grad-top" />

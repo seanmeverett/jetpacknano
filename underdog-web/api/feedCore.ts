@@ -346,7 +346,7 @@ async function xUserTweets(userId: string, screenName: string, topic: string, la
           if (type === 'text') { type = 'image'; format = 'image'; }
         }
       }
-      if (type === 'text' && media.length > 1) { type = 'story'; format = 'story'; }
+      if (type === 'image' && media.length > 1) { type = 'story'; format = 'story'; }
       if (!thumb && ext[0]?.media_url_https) thumb = ext[0].media_url_https;
 
       const tid = tw.rest_id || leg.id_str;
@@ -451,7 +451,7 @@ async function xSearchTweets(topic: string, bearerToken: string, lang = 'en', fr
           if (m.url) { media.push(m.url); if (type === 'text') { type = 'image'; format = 'image'; } }
         }
       }
-      if (type === 'text' && media.length > 1) { type = 'story'; format = 'story'; }
+      if (type === 'image' && media.length > 1) { type = 'story'; format = 'story'; }
       if (!thumb && media[0]) thumb = media[0];
 
       items.push({
