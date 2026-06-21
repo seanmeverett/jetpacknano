@@ -12,10 +12,10 @@ import { LinkText } from './LinkText';
 import { startDwell, flushDwell, recordInteraction } from '../behavior';
 import { TopicsSheet } from './TopicsSheet';
 import {
-  TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
+  TOPIC_ICONS, IoOptionsOutline,
   IoHeart, IoHeartOutline, IoChatbubbleOutline, IoArrowRedoOutline, IoHelpCircleOutline,
   IoSparkles, IoCheckmarkCircle, IoVolumeMuteOutline, IoVolumeHighOutline,
-  IoTextOutline, IoImageOutline, IoAlbumsOutline, IoPlayCircleOutline, IoVideocamOutline, IoLogoYoutube, IoMusicalNotesOutline, IoFunnelOutline, IoOpenOutline,
+  IoTextOutline, IoImageOutline, IoAlbumsOutline, IoPlayCircleOutline, IoVideocamOutline, IoLogoYoutube, IoMusicalNotesOutline, IoOpenOutline,
 } from '../icons';
 
 const initials = (name: string) => name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -26,7 +26,7 @@ const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h
 const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen, loadMore, loadingMore, behaviorProfile, recordDwell } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, toggleLike, toggleFollow, markSeen, loadMore, loadingMore, behaviorProfile, recordDwell } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
   const [shareFor, setShareFor] = useState<RankedPost | null>(null);
@@ -110,15 +110,12 @@ export function Feed() {
       </div>
 
       <div className="topbar">
-        <span className="brand"><span className="brand-icon" />&nbsp;Jetpack Nano</span>
-        <button className={`mode-pill ${opts.mode}`} onClick={() => setScreen('settings')}>
-          {opts.mode === 'inverse' ? <IoTrendingDownOutline size={13} /> : <IoTrendingUpOutline size={13} />}
-          {opts.mode === 'inverse' ? 'Inverse' : 'Standard'}
-        </button>
-        <button className="icon-btn" onClick={() => setTopicsOpen(true)}><IoFunnelOutline size={20} /></button>
-        <button className="icon-btn" onClick={() => setScreen('settings')}><IoOptionsOutline size={22} /></button>
+        <span className="brand"><span className="brand-icon" />Jetpack Nano</span>
+        <div className="topbar-right">
+          <span className="mode-label">{opts.mode === 'inverse' ? 'Inverse' : 'Popular'}</span>
+          <button className="icon-btn" onClick={() => setTopicsOpen(true)}><IoOptionsOutline size={22} /></button>
+        </div>
       </div>
-      <div className="counter">{idx + 1}/{ranked.length}</div>
 
       <WhySheet ranked={why} onClose={() => setWhy(null)} />
       {commentFor && <CommentSheet comments={mergedComments(commentFor.post.id)} onClose={() => setCommentFor(null)} onAdd={(t) => addComment(commentFor.post.id, t)} />}
@@ -272,7 +269,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         </div>
         {post.likes > 0 && (
           <div className="source-stats">
-            <IoTrendingUpOutline size={13} color="var(--brand2)" />
+            <IoOptionsOutline size={13} color="var(--brand2)" />
             <span>{fmtCount(post.likes)} {post.community === 'x.com' ? 'likes' : 'views'} · {fmtCount(post.comments)} comments on {post.community === 'x.com' ? 'X' : 'YouTube'}</span>
           </div>
         )}

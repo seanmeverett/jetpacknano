@@ -20,7 +20,7 @@ export function Settings() {
         <Card icon={<IoSwapHorizontalOutline size={17} color="var(--brand2)" />} title="Ranking mode">
           <div className="segment">
             <button className={`seg ${opts.mode === 'inverse' ? 'active' : ''}`} onClick={() => setMode('inverse')}><IoTrendingDownOutline size={15} /> Inverse</button>
-            <button className={`seg ${opts.mode === 'standard' ? 'active' : ''}`} onClick={() => setMode('standard')}><IoTrendingUpOutline size={15} /> Standard</button>
+            <button className={`seg ${opts.mode === 'standard' ? 'active' : ''}`} onClick={() => setMode('standard')}><IoTrendingUpOutline size={15} /> Popular</button>
           </div>
           <p className="help">{opts.mode === 'inverse' ? 'Zero-likes posts reach farthest. Mega posts get suppressed.' : 'Like every other app: more likes = more reach. See the difference.'}</p>
         </Card>
