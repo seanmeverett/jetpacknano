@@ -101,7 +101,7 @@ export function Feed() {
     <div className="feed-wrap">
       <div className="feed" ref={scroller} onScroll={onScroll}>
         {ranked.map((rp, i) => (
-          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={mergedComments(rp.post.id).length} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} onAutoScroll={() => { const el = scroller.current; if (el) { const next = (Math.round(el.scrollTop / el.clientHeight) + 1) * el.clientHeight; el.scrollTo({ top: next, behavior: 'smooth' }); } }} />
+          <PostCard key={rp.post.id} rp={rp} index={i} activeIndex={idx} creator={usersMap[rp.post.creatorId] || userById(rp.post.creatorId)} liked={!!liked[rp.post.id]} followed={!!followed[rp.post.creatorId]} onLike={() => toggleLike(rp.post.id)} onFollow={() => toggleFollow(rp.post.creatorId)} onWhy={() => setWhy(rp)} commentCount={mergedComments(rp.post.id).length} onComment={() => setCommentFor(rp)} onShare={() => setShareFor(rp)} muted={!soundOn} onToggleMute={() => setSoundOn((v) => !v)} onAutoScroll={() => { const el = scroller.current; if (el) { const next = (Math.round(el.scrollTop / el.clientHeight) + 1) * el.clientHeight; el.scrollTo({ top: next, behavior: 'smooth' }); } }} mode={opts.mode} />
         ))}
         {/* End-of-feed loading / end card — full height so user can scroll to it */}
         <div className="card end-card">
@@ -139,7 +139,7 @@ const formatInfo = (post: any) => {
 };
 const hasControllableAudio = (post: any) => !!(post.audio) || !!(post.embedUrl) || !!(post.imageUrl && /\.mp4(\?|$)/.test(post.imageUrl));
 
-function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, onComment, onShare, commentCount, muted, onToggleMute, onAutoScroll }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; onComment: () => void; onShare: () => void; commentCount: number; muted: boolean; onToggleMute: () => void; onAutoScroll: () => void }) {
+function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, onFollow, onWhy, onComment, onShare, commentCount, muted, onToggleMute, onAutoScroll, mode }: { rp: RankedPost; index: number; activeIndex: number; creator: import('../types').User; liked: boolean; followed: boolean; onLike: () => void; onFollow: () => void; onWhy: () => void; onComment: () => void; onShare: () => void; commentCount: number; muted: boolean; onToggleMute: () => void; onAutoScroll: () => void; mode: string }) {
   const { post, factors } = rp;
   const active = Math.abs(index - activeIndex) <= 1;
   // only the active card can ever play sound; adjacent pre-mounted videos stay muted
@@ -246,9 +246,11 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
       </div>
 
       <div className="reach-meter">
-        <div className="reach-title">REACH BOOST</div>
+        <div className="reach-title">{mode === 'inverse' ? 'REACH BOOST' : 'ENGAGEMENT'}</div>
         <div className="meter-track"><div className="meter-fill" style={{ width: `${Math.max(4, factors.reach * 100)}%` }} /></div>
-        <div className="reach-sub">{factors.reach > 0.7 ? 'high — low likes spread far' : factors.reach < 0.25 ? 'low — crowded post' : 'mid'}</div>
+        <div className="reach-sub">{mode === 'inverse'
+          ? (factors.reach > 0.7 ? 'high — low likes spread far' : factors.reach < 0.25 ? 'low — crowded post' : 'mid')
+          : (factors.reach > 0.7 ? 'high — trending content' : factors.reach < 0.25 ? 'low — gaining traction' : 'moderate')}</div>
       </div>
 
       <div className="bottom-info">
