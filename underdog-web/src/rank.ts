@@ -1,4 +1,6 @@
 import type { Post, RankedPost, RankOptions, ViewerPrefs, TopicId } from './types';
+import type { BehaviorProfile } from './behavior';
+import { personalizationBoost } from './behavior';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -44,7 +46,8 @@ export function rankFeed(
   posts: Post[] = [],
   prefs: ViewerPrefs,
   opts: RankOptions,
-  recentlySeenCreators: string[] = []
+  recentlySeenCreators: string[] = [],
+  behaviorProfile?: BehaviorProfile
 ): RankedPost[] {
   const reach = normalize(posts.map((p) => reachRaw(p, opts)));
   const w = baseWeights(opts.mode);
@@ -53,7 +56,11 @@ export function rankFeed(
   const base = posts.map((p, i) => {
     const rel = relevanceOf(p, prefs);
     const fresh = freshnessOf(p, opts.freshnessHalfLifeHours);
-    const score = (w.rel * rel + w.reach * reach[i] + w.fresh * fresh) * jitter(p.id);
+    // Personalization boost: multiply score by user preference factor (0.7..1.3)
+    const boost = behaviorProfile && behaviorProfile.postsViewed > 3
+      ? personalizationBoost(p.topic as string, p.format || 'text', p.provider || '', behaviorProfile)
+      : 1.0;
+    const score = (w.rel * rel + w.reach * reach[i] + w.fresh * fresh) * jitter(p.id) * boost;
     return { post: p, rel, reach: reach[i], fresh, score };
   });
 

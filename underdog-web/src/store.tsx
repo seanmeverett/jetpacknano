@@ -3,6 +3,8 @@ import type { ViewerPrefs, RankOptions, FeedMode, Post } from './types';
 import { TOPICS } from './seed';
 import { loadUsers, loadComments, fetchLiveFeed, liveToPosts } from './api';
 import { getCookie, setCookie, deleteCookie } from './cookies';
+import type { BehaviorProfile, DwellRecord } from './behavior';
+import { loadProfile, saveProfile, updateProfile } from './behavior';
 
 type TopicId = string; // any topic, including custom free-text
 
@@ -54,6 +56,8 @@ interface AppState {
   loadMore: () => void;
   loadingMore: boolean;
   noMoreContent: boolean;
+  behaviorProfile: BehaviorProfile;
+  recordDwell: (record: DwellRecord) => void;
   addTopic: (topic: string) => void;
   removeTopic: (topic: string) => void;
   topicOrder: string[];
@@ -105,6 +109,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { seenIdsRef.current = seenIds; }, [seenIds]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [noMoreContent, setNoMoreContent] = useState(false);
+  const [behaviorProfile, setBehaviorProfile] = useState<BehaviorProfile>(() => loadProfile());
 
   const [usersMap, setUsersMap] = useState<Record<string, import('./types').User>>({});
   const [seedComments, setSeedComments] = useState<Record<string, Comment[]>>({});
@@ -248,6 +253,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setInterestWeight = useCallback((t: TopicId, w: number) => {
     setPrefs((p) => ({ ...p, interests: { ...p.interests, [t]: w } as ViewerPrefs['interests'] }));
   }, []);
+  const recordDwell = useCallback((record: DwellRecord) => {
+    setBehaviorProfile((prev) => {
+      const updated = updateProfile(prev, record);
+      saveProfile(updated);
+      return updated;
+    });
+  }, []);
   const setLang = useCallback((lang: string) => setPrefs((p) => ({ ...p, lang })), []);
   const setRegion = useCallback((region: string) => setPrefs((p) => ({ ...p, region })), []);
 
@@ -325,9 +337,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen,
       setScreen, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion,
       setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife,
-      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, loadMore, loadingMore, noMoreContent, reset,
+      toggleLike, toggleFollow, addComment, addTopic, removeTopic, topicOrder, seenIds, markSeen, reorderTopics, renameTopic, prefetchFeed, loadMore, loadingMore, noMoreContent, behaviorProfile, recordDwell, reset,
     }),
-    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, loadMore, loadingMore, noMoreContent, reset]
+    [onboardingDone, posts, usersMap, prefs, opts, liked, followed, comments, seedComments, screen, seenIds, finishOnboarding, toggleInterest, setInterestWeight, setLang, setRegion, setMode, setInverseStrength, toggleDiversity, setFreshnessHalfLife, toggleLike, toggleFollow, addComment, loadMore, loadingMore, noMoreContent, behaviorProfile, recordDwell, reset]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -9,6 +9,7 @@ import { ShareSheet } from './ShareSheet';
 import { TikTokEmbed } from './TikTokEmbed';
 import { StoryView } from './StoryView';
 import { LinkText } from './LinkText';
+import { startDwell, flushDwell, recordInteraction } from '../behavior';
 import { TopicsSheet } from './TopicsSheet';
 import {
   TOPIC_ICONS, IoTrendingDownOutline, IoTrendingUpOutline, IoOptionsOutline,
@@ -25,7 +26,7 @@ const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h
 const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen, loadMore, loadingMore, noMoreContent } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen, loadMore, loadingMore, noMoreContent, behaviorProfile, recordDwell } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
   const [shareFor, setShareFor] = useState<RankedPost | null>(null);
@@ -38,7 +39,7 @@ export function Feed() {
   // NOTE: ranking intentionally does NOT depend on `liked` — tapping the heart should
   // only fill it in + bump the displayed count, never reorder the feed (which would
   // snap the viewer to a different video).
-  const ranked = useMemo<RankedPost[]>(() => rankFeed(posts, prefs, opts), [posts, prefs, opts]);
+  const ranked = useMemo<RankedPost[]>(() => rankFeed(posts, prefs, opts, [], behaviorProfile), [posts, prefs, opts, behaviorProfile]);
 
   // Deep-link: if the URL has ?p=<postId>, snap the feed to that post.
   useEffect(() => {
@@ -56,7 +57,20 @@ export function Feed() {
     }
   }, [idx, ranked, markSeen]);
 
+  // Dwell time tracking: start timer when post becomes active, flush when scrolling away
   // MUST be before any early return — React hooks can't be conditional
+  useEffect(() => {
+    const current = ranked[idx];
+    if (current) {
+      startDwell(current.post.id, current.post.topic as string, current.post.format || 'text', current.post.provider || '');
+    }
+    // Flush the previous post's dwell and record it
+    const prevRecord = flushDwell();
+    if (prevRecord && prevRecord.dwellMs >= 1000) {
+      recordDwell(prevRecord);
+    }
+  }, [idx, ranked, recordDwell]);
+
   const loadingMoreRef = useRef(false);
 
   if (posts.length === 0) {
@@ -206,8 +220,8 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
 
       <div className="rail">
         {hasControllableAudio(post) && <button className="rail-btn vol-btn" onClick={onToggleMute}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>}
-        <button className="rail-btn" onClick={onLike}>{liked ? <IoHeart size={32} color="var(--brand2)" /> : <IoHeartOutline size={32} />}<span style={{ color: liked ? 'var(--brand2)' : 'var(--text)' }}>{fmtCount(liked ? 1 : 0)}</span></button>
-        <button className="rail-btn" onClick={onComment}><IoChatbubbleOutline size={32} /><span>{fmtCount(commentCount)}</span></button>
+        <button className="rail-btn" onClick={() => { recordInteraction('liked'); onLike(); }}>{liked ? <IoHeart size={32} color="var(--brand2)" /> : <IoHeartOutline size={32} />}<span style={{ color: liked ? 'var(--brand2)' : 'var(--text)' }}>{fmtCount(liked ? 1 : 0)}</span></button>
+        <button className="rail-btn" onClick={() => { recordInteraction('commented'); onComment(); }}><IoChatbubbleOutline size={32} /><span>{fmtCount(commentCount)}</span></button>
         <button className="rail-btn" onClick={onShare}><IoArrowRedoOutline size={30} /><span></span></button>
         <button className="rail-btn why-rail" onClick={onWhy}><IoHelpCircleOutline size={30} /><span>Why?</span></button>
       </div>
@@ -229,7 +243,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
             </div>
             <div className="handle">{post.authorUrl ? <a href={post.authorUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>@{creator.handle}</a> : <>@{creator.handle}</>} · {fmtCount(creator.followers)} followers</div>
           </div>
-          <button className={`follow-btn ${followed ? "following" : ""}`} onClick={onFollow}>{followed ? "Following" : "Follow"}</button>
+          <button className={`follow-btn ${followed ? "following" : ""}`} onClick={() => { recordInteraction('followed'); onFollow(); }}>{followed ? "Following" : "Follow"}</button>
         </div>
         <div className="tag-row">
           <span className="tag" style={{ background: topic.color, color: '#FFFFFF' }}>{TopicIcon && <TopicIcon size={12} />} {topic.label}</span>
@@ -244,7 +258,7 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
         {(post.imageUrl || post.media || post.embedUrl || post.audio) && <p className="caption"><LinkText text={post.caption} /></p>}
         <button className="why-link" onClick={onWhy}><IoSparkles size={13} color="var(--accent)" /> Why am I seeing this?</button>
         {post.permalink && (
-          <a className="open-source-btn" href={post.permalink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+          <a className="open-source-btn" href={post.permalink} target="_blank" rel="noreferrer" onClick={(e) => { e.stopPropagation(); recordInteraction('openedSource'); }}>
             <IoOpenOutline size={16} /> Open on {post.community === 'x.com' ? 'X' : post.community === 'youtube.com' ? 'YouTube' : (post.community || 'source')}
           </a>
         )}
