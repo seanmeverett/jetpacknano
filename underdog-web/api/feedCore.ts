@@ -90,6 +90,9 @@ const X_ACCOUNTS: Record<string, { s: string; id: string }[]> = {
   wearables: [
     { s: 'wearabletech', id: '277954760' }, { s: 'Apple', id: '380749300' },
   ],
+  'quantum computing': [
+    { s: 'GoogleQuantumAI', id: '1383967390556246018' }, { s: 'IBMResearch', id: '16319797' },
+  ],
 };
 
 const Q: Record<string, { m?: string[]; y: string[] }> = {
