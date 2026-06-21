@@ -77,6 +77,13 @@ const X_ACCOUNTS: Record<string, { s: string; id: string }[]> = {
   'augmented reality': [
     { s: 'MagicLeap', id: '19102735' },
   ],
+  physics: [
+    { s: 'physorg_com', id: '17248121' }, { s: 'MITphysics', id: '127743541' },
+  ],
+  'quantum mechanics': [
+    { s: 'QuantaMag', id: '1689481434' }, { s: 'QuantumMagazine', id: '89267001' },
+    { s: 'IBMResearch', id: '16319797' },
+  ],
 };
 
 const Q: Record<string, { m?: string[]; y: string[] }> = {
@@ -101,11 +108,13 @@ const Q: Record<string, { m?: string[]; y: string[] }> = {
   'spatial computing': { y: ['spatial computing'] },
   'augmented reality': { y: ['augmented reality'] },
   spacex: { y: ['spacex'] },
+  physics: { y: ['physics'] },
+  'quantum mechanics': { y: ['quantum mechanics'] },
 };
 
 // Parent category → sub-topic search terms (used for both YouTube and X)
 const SUBTOPICS: Record<string, string[]> = {
-  'emerging-tech': ['artificial intelligence', 'bitcoin', 'spatial computing', 'augmented reality', 'spacex'],
+  'emerging-tech': ['artificial intelligence', 'bitcoin', 'spatial computing', 'augmented reality', 'spacex', 'physics', 'quantum mechanics'],
 };
 
 
