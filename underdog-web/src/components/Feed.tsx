@@ -105,7 +105,7 @@ export function Feed() {
         ))}
         {/* End-of-feed loading / end card — full height so user can scroll to it */}
         <div className="card end-card">
-          <div className="end-card-content"><div className="spinner" /><span>{loadingMore ? 'Loading more content...' : 'Loading...'}</span></div>
+          <div className="end-card-content"><span className="loading-icon" /><span>{loadingMore ? 'Loading more content...' : 'Loading...'}</span></div>
         </div>
       </div>
 
