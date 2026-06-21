@@ -235,6 +235,12 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
           <span className="tag" style={{ background: topic.color, color: '#FFFFFF' }}>{TopicIcon && <TopicIcon size={12} />} {topic.label}</span>
           <span className="age">{ageText(post.ageHours)}</span>
         </div>
+        {post.likes > 0 && (
+          <div className="source-stats">
+            <IoTrendingUpOutline size={13} color="var(--brand2)" />
+            <span>{fmtCount(post.likes)} {post.community === 'x.com' ? 'likes' : 'views'} · {fmtCount(post.comments)} comments on {post.community === 'x.com' ? 'X' : 'YouTube'}</span>
+          </div>
+        )}
         {(post.imageUrl || post.media || post.embedUrl || post.audio) && <p className="caption"><LinkText text={post.caption} /></p>}
         <button className="why-link" onClick={onWhy}><IoSparkles size={13} color="var(--accent)" /> Why am I seeing this?</button>
         {post.permalink && (

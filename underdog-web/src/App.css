@@ -255,3 +255,6 @@ a.name:hover { text-decoration: underline; }
   -webkit-mask:url('/jetpack-icon.svg') no-repeat center/contain; mask:url('/jetpack-icon.svg') no-repeat center/contain;
   animation: pulse 3.5s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.88); } }
+
+/* Source platform reach stats */
+.source-stats { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--brand2); font-weight:500; }
