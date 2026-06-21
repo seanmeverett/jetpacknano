@@ -206,9 +206,9 @@ function PostCard({ rp, index, activeIndex, creator, liked, followed, onLike, on
 
       <div className="rail">
         {hasControllableAudio(post) && <button className="rail-btn vol-btn" onClick={onToggleMute}>{muted ? <IoVolumeMuteOutline size={30} /> : <IoVolumeHighOutline size={30} />}<span>{muted ? "Tap" : "Sound"}</span></button>}
-        <button className="rail-btn" onClick={onLike}>{liked ? <IoHeart size={32} color="var(--brand2)" /> : <IoHeartOutline size={32} />}<span style={{ color: liked ? 'var(--brand2)' : 'var(--text)' }}>{fmtCount(post.likes + (liked ? 1 : 0))}</span></button>
-        <button className="rail-btn" onClick={onComment}><IoChatbubbleOutline size={32} /><span>{fmtCount(post.comments + commentCount)}</span></button>
-        <button className="rail-btn" onClick={onShare}><IoArrowRedoOutline size={30} /><span>{fmtCount(post.shares)}</span></button>
+        <button className="rail-btn" onClick={onLike}>{liked ? <IoHeart size={32} color="var(--brand2)" /> : <IoHeartOutline size={32} />}<span style={{ color: liked ? 'var(--brand2)' : 'var(--text)' }}>{fmtCount(liked ? 1 : 0)}</span></button>
+        <button className="rail-btn" onClick={onComment}><IoChatbubbleOutline size={32} /><span>{fmtCount(commentCount)}</span></button>
+        <button className="rail-btn" onClick={onShare}><IoArrowRedoOutline size={30} /><span></span></button>
         <button className="rail-btn why-rail" onClick={onWhy}><IoHelpCircleOutline size={30} /><span>Why?</span></button>
       </div>
 
