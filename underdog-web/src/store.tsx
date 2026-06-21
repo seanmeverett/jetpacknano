@@ -209,14 +209,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
   // Load more content when user reaches the end of the feed — appends to existing posts
   const loadMore = useCallback(() => {
-    if (loadingMore || noMoreContent) return;
+    if (loadingMore) return;
     const activeTopics = topicOrder.filter((t) => (prefs.interests[t] ?? 0) > 0);
     if (!activeTopics.length) return;
     setLoadingMore(true);
     const currentSeen = seenIdsRef.current;
+    const seenSet = new Set(currentSeen);
     fetchLiveFeed(activeTopics, prefs.lang || 'en', prefs.region || 'US', currentSeen, true).then((res) => {
-      const seenSet = new Set(currentSeen);
-      const filtered = res.items.filter((it) => !seenSet.has(it.id));
+      let filtered = res.items.filter((it) => !seenSet.has(it.id));
+      if (!filtered.length && res.items.length) {
+        // All items were seen — clear seenIds and use them again rather than showing "end"
+        filtered = res.items;
+        setSeenIds([]); seenIdsRef.current = [];
+        try { localStorage.removeItem('jetpacknano_seen'); } catch {}
+      }
       if (filtered.length) {
         const { posts: lp, users: lu } = liveToPosts(filtered);
         setPosts((prev) => [...prev, ...lp]);
@@ -224,10 +230,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         markSeen(lp.map((p) => p.id));
         setNoMoreContent(false);
       } else {
-        setNoMoreContent(true);
+        // API returned nothing at all — retry once without seenIds
+        fetchLiveFeed(activeTopics, prefs.lang || 'en', prefs.region || 'US', [], true).then((res2) => {
+          if (res2.items.length) {
+            const { posts: lp, users: lu } = liveToPosts(res2.items);
+            setPosts((prev) => [...prev, ...lp]);
+            setUsersMap((m) => { const n = { ...m }; for (const u of lu) n[u.id] = u; return n; });
+            markSeen(lp.map((p) => p.id));
+            setNoMoreContent(false);
+          }
+        }).catch(() => {});
       }
     }).catch(() => {}).finally(() => setLoadingMore(false));
-  }, [loadingMore, noMoreContent, topicOrder, prefs.interests, prefs.lang, prefs.region, markSeen]);
+  }, [loadingMore, topicOrder, prefs.interests, prefs.lang, prefs.region, markSeen]);
 
   const finishOnboarding = useCallback((interests: TopicId[], lang = 'en', region = 'US') => {
     setNoMoreContent(false);

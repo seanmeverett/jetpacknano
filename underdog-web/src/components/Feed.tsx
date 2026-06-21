@@ -26,7 +26,7 @@ const ageText = (h: number) => (h < 1 ? 'just now' : h < 24 ? `${Math.round(h)}h
 const deeplink = (postId: string) => `${window.location.origin}${window.location.pathname}?p=${postId}`;
 
 export function Feed() {
-  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen, loadMore, loadingMore, noMoreContent, behaviorProfile, recordDwell } = useApp();
+  const { prefs, opts, liked, followed, posts, usersMap, comments, seedComments, addComment, setScreen, toggleLike, toggleFollow, markSeen, loadMore, loadingMore, behaviorProfile, recordDwell } = useApp();
   const [why, setWhy] = useState<RankedPost | null>(null);
   const [commentFor, setCommentFor] = useState<RankedPost | null>(null);
   const [shareFor, setShareFor] = useState<RankedPost | null>(null);
@@ -105,13 +105,7 @@ export function Feed() {
         ))}
         {/* End-of-feed loading / end card — full height so user can scroll to it */}
         <div className="card end-card">
-          {loadingMore ? (
-            <div className="end-card-content"><div className="spinner" /><span>Loading more content…</span></div>
-          ) : noMoreContent ? (
-            <div className="end-card-content"><span className="end-text">You're all caught up!</span><span className="end-sub">Refresh the page for the latest content.</span></div>
-          ) : (
-            <div className="end-card-content"><div className="spinner" /></div>
-          )}
+          <div className="end-card-content"><div className="spinner" /><span>{loadingMore ? 'Loading more content...' : 'Loading...'}</span></div>
         </div>
       </div>
 
