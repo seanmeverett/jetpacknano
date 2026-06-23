@@ -18,8 +18,8 @@ export function Onboarding() {
     <div className="onboard" style={{ background: 'radial-gradient(120% 80% at 50% 0%, #590000 0%, #000000 70%)' }}>
       <div className="onboard-scroll">
         <div className="logo-row"><span className="brand-icon" /><span className="logo">Jetpack Nano</span></div>
-        <h1 className="h1">Where zero wins.</h1>
-        <p className="lede">The feed that spreads attention around. Posts with fewer likes reach farther — so you meet original people, not the same five accounts. Pick a few things you like and we'll show you the underdogs.</p>
+        <h1 className="h1">Emerging tech, in real time.</h1>
+        <p className="lede">The latest trending content from X and YouTube across AI, Bitcoin, SpaceX, quantum computing, robotics, and more — all in one scroll. No app-hopping, no algorithm games.</p>
 
         <div className="emerging-tech-card">
           <div className="emerging-tech-icon"><span className="brand-icon" /></div>
